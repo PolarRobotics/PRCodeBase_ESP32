@@ -148,6 +148,12 @@ void setup() {
   // Once paired, set lights to appropriate status
   lights.setLEDStatus(Lights::PAIRED);
 
+  if (robotType == receiver) {
+    lights.setupIndicator();
+    lights.setIndicatorPattern(Lights::CROSS);
+    // lights.setIndicatorPattern(Lights::Y);
+  }
+
   ps5.attachOnConnect(onConnection);
   ps5.attachOnDisconnect(onDisconnect);
 }
