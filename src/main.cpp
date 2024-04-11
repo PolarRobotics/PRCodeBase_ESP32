@@ -124,6 +124,11 @@ void setup() {
       robot = new QuarterbackBase(drive);
       break;
     case receiver:
+      robot = new Lineman();
+      drive = new Drive(lineman, motorType, driveParams);
+      drive->setupMotors(M1_PIN, M2_PIN);
+      lights.setupIndicator();
+      break;
     case lineman:
     default: // Assume lineman
       robot = new Lineman();
