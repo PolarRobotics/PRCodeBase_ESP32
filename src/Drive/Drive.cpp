@@ -90,7 +90,7 @@ Drive::Drive(BotType botType, MotorType motorType, drive_param_t driveParams, bo
   } 
 
   // Gyro
-  if (hasGyro){
+  if (hasGyro || mpu->begin()){
     CL_enable = true;
 
     switch (botType) {
@@ -337,6 +337,8 @@ void Drive::calcTurning(float stickTrn, float fwdLinPwr) {
 }
 
 void Drive::emergencyStop() {
+    // Turn off the CL controller, in the event that it is unstable
+    CL_enable = false;
     M1.stop(); 
     M2.stop();
 }
@@ -432,10 +434,6 @@ void Drive::printCsvInfo() {
     Serial.println(5); // last line is -ALWAYS- println or else the python script will break
 }
 
-void Drive::setCurrentAngleSpeed(float speed) {
-  currentAngleSpeed = speed;
-}
-
 /**
  * @brief NEEDS SPELLCHECK integrate uses trapizodial intgration to calculate the running integral sum for the PI controller
  * 
@@ -460,6 +458,9 @@ void Drive::integrateReset() {
 
 /**
  * @brief NEEDS SPELLCHECK PILoop is the closed loop controller. this is the main function for CL  
+ * 
+ * 
+ * 
  * @author Grant Brautigam
  * Updated 11-19-2023
  * 
@@ -487,6 +488,18 @@ int Drive::PILoop() {
  * Updated: 10-11-2020
 */
 void Drive::update() {
+    // Gather data from gyroscope and store in mpu object
+    if (hasGyro) {
+        mpu->getEvent(&a, &g, &temp);
+
+        // Serial.print("Rotation Z:");
+        // Serial.print(g.gyro.z - 0.03);
+        // Serial.print(" rad/s ");
+        // set the current angle speed, to be used in the control loop later
+        currentAngleSpeed = g.gyro.z - 0.03; // rad/s
+    }
+  
+
     // Generate turning motion
     generateMotionValues();
     //delay(100);

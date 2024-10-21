@@ -174,17 +174,6 @@ void loop() {
   Serial.print("Main Loop ");
   //delay(10);
 
-  //if (useGyro) { 
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
-
-    Serial.print("Rotation Z:");
-    Serial.print(g.gyro.z - 0.03);
-    Serial.print(" rad/s ");
-
-    drive->setCurrentAngleSpeed(g.gyro.z - 0.03);
-  //}
-
   if (ps5.isConnected()) {
     // Serial.print(F("\r\nConnected"));
     // ps5.setLed(255, 0, 0);   // set LED red

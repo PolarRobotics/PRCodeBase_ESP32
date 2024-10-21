@@ -74,6 +74,9 @@
 
 #define BRAKE_BUTTON_PCT 0
 
+// Error threshold for DriveStraight controller
+#define ERROR_THRESHOLD 0.02f
+
 
 class Drive {
   private:
@@ -100,14 +103,13 @@ class Drive {
     sensors_event_t a, g, temp;
     float currentAngleSpeed;
     bool drivingStraight;
-    int motorDiff;
 
     // PILoop
     bool CL_enable = true;
+    int motorDiff;
     int motorDiffCorrection;
     float k_p;
     float k_i;
-    const float ERROR_THRESHOLD = 0.02;
     unsigned long lastTime;
     //integrate
     int prev_current_error;
@@ -137,7 +139,8 @@ class Drive {
 
     Drive();
     Drive(BotType botType, MotorType motorType);
-    Drive(BotType botType, MotorType motorType, drive_param_t driveParams, bool hasEncoders = false, int turnFunction = 2, bool hasGyro = false);
+    Drive(BotType botType, MotorType motorType, drive_param_t driveParams, 
+        bool hasEncoders = false, int turnFunction = 2, bool hasGyro = false);
     void setupMotors(uint8_t lpin, uint8_t rpin);
     void setMotorType(MotorType motorType);
     void setStickPwr(int8_t leftY, int8_t rightX);
