@@ -32,10 +32,14 @@
 #define STICK_DEADZONE 0.075 //0.0390625F // 8.0 / 127.0
 #define THRESHOLD 0.00001
 
+#define MOTOR_ZERO_OFFST 0.05f
+
 // Motor Percent Defines
 #define FALCON_CALIBRATION_FACTOR 1.0f
 // the minimum power that can be written to the motor, prevents stalling
-#define MOTOR_ZERO_OFFST 0.05f
+#define FALCON_BOOST_PCT          0.70f
+#define FALCON_NORMAL_PCT         0.4f
+#define FALCON_SLOW_PCT           0.25f
 
 // BSN defines for the small 12v motors
 #define SMALL_12V_BOOST_PCT          0.15f
@@ -99,7 +103,7 @@ class Drive {
 
     Drive();
     Drive(BotType botType, MotorType motorType);
-    Drive(BotType botType, drive_param_t driveParams, bool hasEncoders = false, int turnFunction = 2);
+    Drive(BotType botType, drive_param_t driveParams, bool hasEncoders = false, int turnFunction = 1);
     void setupMotors(uint8_t lpin, uint8_t rpin);
     void setupMotors(uint8_t lpin, uint8_t rpin, uint8_t left_enc_a_pin, uint8_t left_enc_b_pin, uint8_t right_enc_a_pin, uint8_t right_enc_b_pin);
     void setMotorType(MotorType motorType);
