@@ -42,11 +42,9 @@
  * @author Rhys Davies 
  */
 MotorControl::MotorControl() {  
-  requestedRPM = 0;
+  newRequestedRPM = 0;
   lastRampTime = millis();
 }
-
-
 
 /**
  * @brief setup the given pin to the next free channel, returns channel number or 255 if failure
@@ -78,8 +76,7 @@ void MotorControl::write(float pct) {
   Motor.write(pct);
 }
 
-int MotorControl::Percent2RPM(float pct)
-{
+int MotorControl::Percent2RPM(float pct) {
   // float temp = constrain(pct, -1, 1);
   return this->max_rpm * constrain(pct, -1.0f, 1.0f);
 }
@@ -101,41 +98,39 @@ float MotorControl::RPM2Percent(int rpm) {
  * @authors Grant Brautigam, Julia DeVore, Lena Frate
  * Created: fall 2023
  *
- * @param requestedPower, accelRate
+ * @param requestedRPM, accelRate
  * @return int
  */
-float MotorControl::ramp(float requestedPower,  float accelRate) {
-    timeElapsed = millis() - lastRampTime;
-    // Serial.print("  time elapsed: ");
-    // Serial.print(timeElapsed);
+float MotorControl::ramp(int requestedRPM,  int accelRate) {
+  // convert the current time [ms] -> [minutes] elapsed time
+  timeElapsed = millis() * (1/1000) * (1/60) - lastRampTime;
+  // Serial.print("  time elapsed: ");
+  // Serial.print(timeElapsed);
 
-    // Serial.print("  acceleration: ");
-    // Serial.print(accelRate);
+  // Serial.print("  acceleration: ");
+  // Serial.print(accelRate);
 
-    // Serial.print("  requested power: ");
-    // Serial.print(requestedPower);
+  // Serial.print("  requested power: ");
+  // Serial.print(requestedRPM);
 
-    // Serial.print("  currentPower: ");
-    // Serial.print(currentPower);
+  // Serial.print("  currentPower: ");
+  // Serial.print(currentPower);
 
-    // Serial.print("\n");
+  // Serial.print("\n");
 
-    lastRampTime = millis();
-    if (requestedPower > requestedRPM) // need to speed up
-    {
-        requestedRPM = requestedRPM + accelRate * timeElapsed;
-        if (requestedRPM > requestedPower) 
-            requestedRPM = requestedPower; // to prevent you from speeding up past the requested speed
-    }
-    else // need to slow down
-    {
-        requestedRPM = requestedRPM - accelRate * timeElapsed; 
-        if (requestedRPM < requestedPower) 
-            requestedRPM = requestedPower; // to prevent you from slowing down below the requested speed
-    }
-    
-    return requestedRPM;
-
+  if (requestedRPM > newRequestedRPM) { // need to speed up
+      newRequestedRPM = newRequestedRPM + accelRate * timeElapsed;
+      if (newRequestedRPM > requestedRPM) 
+          newRequestedRPM = requestedRPM; // to prevent you from speeding up past the requested speed
+  }
+  else { // need to slow down
+      newRequestedRPM = newRequestedRPM - accelRate * timeElapsed; 
+      if (newRequestedRPM < requestedRPM) 
+          newRequestedRPM = requestedRPM; // to prevent you from slowing down below the requested speed
+  }
+  
+  lastRampTime = millis() * (1/1000) * (1/60);
+  return newRequestedRPM;
 }
 
 /**

@@ -20,9 +20,9 @@ private:
   MotorInterface Motor;
 
   // for ramp
-  float requestedRPM;     
-  float lastRampTime;
-  float timeElapsed;
+  float newRequestedRPM; // RPM   
+  float lastRampTime; // minutes
+  float timeElapsed; // minutes
 
   // Encoder
   bool has_encoder;
@@ -52,7 +52,7 @@ public:
   int Percent2RPM(float pct);
   float RPM2Percent(int rpm);
 
-  float ramp(float requestedPower, float accelRate);
+  float ramp(int requestedRPM, int accelRate);
 
    // Encoder Related Functions
   void readEncoder();

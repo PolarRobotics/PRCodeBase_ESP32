@@ -51,8 +51,6 @@ typedef struct BotConfig {
   const char* bot_name;
   BotType bot_type; // primary robot position
   drive_param_t drive_params;
-  // float gear_ratio;
-  // float wheel_base;
   // LED STRIP:
   // bool has_leds;
   // uint8_t num_leds;

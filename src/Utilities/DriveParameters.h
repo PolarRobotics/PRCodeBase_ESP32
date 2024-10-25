@@ -3,7 +3,7 @@
 
 /**
  * @brief drive_param
- * a list of parameters pulled from Robot Config for bot-specific parameters related to drive
+ * a list of parameters pulled from Robot Config for bot-specific parameters related to drive especially with turning
  * 
  * used in Drive and RobotConfig
 */

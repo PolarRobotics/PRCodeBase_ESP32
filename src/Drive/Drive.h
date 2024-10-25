@@ -9,14 +9,14 @@
 #endif // !NUM_MOTORS
 
 // RAMP DEFINES
-// rate of change of power with respect to time when accelerating %power/10th of sec
-#define ACCELERATION_RATE    0.00375f // [RPM/ms] possibly change to RPM/s for future
-#define RB_ACCELERATION_RATE 0.0015f //default: 0.00375f, Runningback old: 0.03f, 0.015f
+// rate of change of power with respect to time when accelerating in ramp
+// #define ACCELERATION_RATE 0.00375f // [RPM/ms] possibly change to RPM/s for future
+#define ACCELERATION_RATE    225 // [RPM^2] revolutions per minute squared
+// #define ACCELERATION_RATE 0.004f // [RPM/ms] possibly change to RPM/s for future
+#define RB_ACCELERATION_RATE 240 // [RPM^2] revolutions per minute squared
 
 // rate of deceleration/braking
 #define BRAKE_PERCENTAGE 0.9
-// how often the ramp() function changes the motor power
-#define TIME_INCREMENT 5
 
 // drive param generation
 #define NORMAL_TURN_CONSTANT 0.05
@@ -73,8 +73,8 @@ class Drive {
     int omega_L, omega_R;
     float R, R_Max, R_Min;
     int max_RPM, min_RPM;
-    int enableTurnSensitivity;
     // Turn sensitivity variables
+    uint8_t enableTurnSensitivity; // 0 for linear, 1 for Rhys's modified sigmoid function, 2 for cubic (default)
     float scaledSensitiveTurn = 0.0f;
     float turnSensitivityScalar = 0.0f;
     float domainAdjustment = 0.0f;
@@ -103,7 +103,7 @@ class Drive {
 
     Drive();
     Drive(BotType botType, MotorType motorType);
-    Drive(BotType botType, drive_param_t driveParams, bool hasEncoders = false, int turnFunction = 1);
+    Drive(BotType botType, drive_param_t driveParams, bool hasEncoders = false, uint8_t turnFunction = 2, bool hasGyro = false);
     void setupMotors(uint8_t lpin, uint8_t rpin);
     void setupMotors(uint8_t lpin, uint8_t rpin, uint8_t left_enc_a_pin, uint8_t left_enc_b_pin, uint8_t right_enc_a_pin, uint8_t right_enc_b_pin);
     void setMotorType(MotorType motorType);
