@@ -66,7 +66,8 @@ class Drive {
     MotorType motorType; // TODO: Why is this private if we have a setter with no input validation? - MP 2023-05-10
     float gearRatio;
     bool hasEncoders;
-
+    bool hasGyroscope;
+    
     float speedScalar;
     float wheelBase;
     int omega;
@@ -74,7 +75,7 @@ class Drive {
     float R, R_Max, R_Min;
     int max_RPM, min_RPM;
     // Turn sensitivity variables
-    uint8_t enableTurnSensitivity; // 0 for linear, 1 for Rhys's modified sigmoid function, 2 for cubic (default)
+    TurnFunction turnSensitivityType;
     float scaledSensitiveTurn = 0.0f;
     float turnSensitivityScalar = 0.0f;
     float domainAdjustment = 0.0f;
@@ -103,7 +104,7 @@ class Drive {
 
     Drive();
     Drive(BotType botType, MotorType motorType);
-    Drive(BotType botType, drive_param_t driveParams, bool hasEncoders = false, uint8_t turnFunction = 2, bool hasGyro = false);
+    Drive(BotType botType, drive_param_t driveParams);
     void setupMotors(uint8_t lpin, uint8_t rpin);
     void setupMotors(uint8_t lpin, uint8_t rpin, uint8_t left_enc_a_pin, uint8_t left_enc_b_pin, uint8_t right_enc_a_pin, uint8_t right_enc_b_pin);
     void setMotorType(MotorType motorType);

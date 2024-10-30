@@ -32,14 +32,14 @@
 */
 
 Drive::Drive() {
-  Drive(lineman, {big_ampflow, 1, 9, 6, 36});
+  Drive(lineman, {big_ampflow, 1, 9, 6, 36, false, cubic, false});
 }
 
 Drive::Drive(BotType botType, MotorType motorType) {
-  Drive(botType, {motorType, 1, 9, 6, 36});
+  Drive(botType, {motorType, 1, 9, 6, 36, false, cubic, false});
 }
 
-Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, uint8_t turnFunction, bool hasGyro) {
+Drive::Drive(BotType botType, drive_param_t driveParams) {
   this->botType = botType;
   this->hasEncoders = hasEncoders;
   this->motorType = driveParams.motor_type;
@@ -47,6 +47,9 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, uint8
   this->wheelBase = driveParams.wheel_base;
   this->R_Min = driveParams.r_min;
   this->R_Max = driveParams.r_max;
+  this->hasEncoders = driveParams.has_encoders;
+  this->turnSensitivityType = driveParams.turn_function; // 0 for linear, 1 for Rhys's function, 2 for cubic (default)
+  this->hasGyroscope = driveParams.has_gyroscope;
 
   if (botType == quarterback_old) {
     this->BIG_BOOST_PCT = 0.8; 
@@ -82,12 +85,11 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, uint8
     // max_RPM = M1.max_rpm;
 
     // initialize turn sensitivity variables
-    enableTurnSensitivity = turnFunction; // 0 for linear, 1 for Rhys's function, 2 for cubic (default)
-    turnSensitivityScalar = 0.49; // Range: (0, 0.5) really [0.01, 0.49]
-    domainAdjustment = 1/log((1-(turnSensitivityScalar + 0.5))/(turnSensitivityScalar + 0.5));
-    
+    if (turnSensitivityType = sigmoid) {
+        turnSensitivityScalar = 0.49; // Range: (0, 0.5) really [0.01, 0.49]
+        domainAdjustment = 1/log((1-(turnSensitivityScalar + 0.5))/(turnSensitivityScalar + 0.5));
+    }
   } 
-
 }
 
 void Drive::setupMotors(uint8_t lpin, uint8_t rpin) {
@@ -270,11 +272,12 @@ void Drive::generateMotionValues(float tankModePct) {
  */
 void Drive::calcTurning(float stickTrn, float fwdLinPwr) {
     //R_Min = R_Min + abs(stickForwardRev)*(R_High_Min - R_Min); // start of turn scaling 
-    if (enableTurnSensitivity == 0) // linear
+    if (turnSensitivityType == linear) // linear
         scaledSensitiveTurn = stickTrn;
-    else if(enableTurnSensitivity == 1) // rhys's function
+    else if(turnSensitivityType == sigmoid) // rhys's function
+        // Math Model: https://www.desmos.com/calculator/j3tlsl3vlt
         scaledSensitiveTurn = log((1-(turnSensitivityScalar * stickTrn + 0.5))/(turnSensitivityScalar * stickTrn + 0.5)) * domainAdjustment;
-    else // cubic
+    else if(turnSensitivityType = cubic)
         scaledSensitiveTurn = pow(stickTrn, 3);
         
     // Calculate the R value from the stick turn input
@@ -320,7 +323,7 @@ void Drive::printSetup() {
     Serial.print(F("\nMAX RPM: "));
     Serial.print(M1.max_rpm);
     Serial.print(F("\nTurnSensitivityMode: "));
-    Serial.print(enableTurnSensitivity);
+    Serial.print(turnSensitivityType);
     Serial.print(F("\nEncoders: "));
     Serial.print(F("\nHas Encoders? "));
     Serial.print(this->hasEncoders ? F("True") : F("False"));

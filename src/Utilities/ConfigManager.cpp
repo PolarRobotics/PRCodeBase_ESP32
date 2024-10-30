@@ -37,6 +37,9 @@ void ConfigManager::read() {
     this->config->drive_params.wheel_base = (float)preferences.getFloat("wheel_base");
     this->config->drive_params.r_min = (float)preferences.getFloat("r_min");
     this->config->drive_params.r_max = (float)preferences.getFloat("r_max");
+    this->config->drive_params.has_encoders = preferences.getBool("has_encoders", false);
+    this->config->drive_params.turn_function = (TurnFunction)preferences.getUChar("turn_function", cubic);
+    this->config->drive_params.has_gyroscope = preferences.getBool("has_gyroscope", false);
 
     // close the bot_config namespace
     preferences.end();
@@ -111,6 +114,13 @@ const char * ConfigManager::toString() {
     temp.append(to_string(config->drive_params.r_min));
     temp.append("\nr_max: ");
     temp.append(to_string(config->drive_params.r_max));
+    temp.append("\nhas_encoders: ");
+    temp.append(to_string(config->drive_params.has_encoders));
+    temp.append("\nturn function: ");
+    temp.append(to_string(config->drive_params.turn_function));
+    temp.append("\nhas_gyroscope: ");
+    temp.append(to_string(config->drive_params.has_gyroscope));
+
     temp.append("\r\n");
     return temp.c_str();
 }
@@ -140,13 +150,15 @@ bool ConfigManager::write(bot_config_t* cfg) {
     // store the bot and motor type to preferences
     preferences.putUChar("bot_type", static_cast<uint8_t>(cfg->bot_type));
 
-    // store drive parameters (gear ratio, wheelbase, r_min, r_max)
+    // store drive parameters (gear ratio, wheelbase, r_min, r_max, has_encoders, turn_function, has_gyro)
     preferences.putUChar("motor_type", static_cast<uint8_t>(cfg->drive_params.motor_type));
     preferences.putFloat("gear_ratio", cfg->drive_params.gear_ratio);
     preferences.putFloat("wheel_base", cfg->drive_params.wheel_base);
     preferences.putFloat("r_min", cfg->drive_params.r_min);
     preferences.putFloat("r_max", cfg->drive_params.r_max);
-
+    preferences.putUChar("has_encoders", cfg->drive_params.has_encoders);
+    preferences.putUChar("turn_function", static_cast<uint8_t>(cfg->drive_params.turn_function));
+    preferences.putUChar("has_gyroscope", cfg->drive_params.has_gyroscope);
     // close the namespace
     preferences.end();
 

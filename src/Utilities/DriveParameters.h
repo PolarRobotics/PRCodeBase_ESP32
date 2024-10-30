@@ -13,6 +13,9 @@ typedef struct drive_param {
     float wheel_base;
     float r_min;
     float r_max;
+    bool has_encoders;
+    TurnFunction turn_function;
+    bool has_gyroscope; // needed for DriveStraight if an Adafruit MPU6050
 } drive_param_t;
 
 #endif // DRIVE_PARAMETERS_H
