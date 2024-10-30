@@ -15,16 +15,21 @@ class Kicker : public Robot {
 private:
   bool enabled; // safety feature
   uint8_t kickerPin;
+  uint8_t limitSwitchPin;
+  uint8_t kickerEncoderPin;
   MotorInterface windupMotor;
 
 public:
-  Kicker(uint8_t kickerPin);
+  Kicker(uint8_t kickerPin, u_int8_t limitSwitchPin, uint8_t kickerEncoderPin);
   void action() override; //! robot subclass must override action
   void enable();
   void test();
   void turnForward();
   void turnReverse();
   void stop();
+  void homeKickingArm();
+  void adjustAngle(int angle);
+  uint16_t getCurrentAngle();
 };
 
 #endif // KICKER_H
