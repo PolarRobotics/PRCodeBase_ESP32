@@ -51,20 +51,6 @@ Drive::Drive(BotType botType, drive_param_t driveParams) {
   this->turnSensitivityType = driveParams.turn_function; // 0 for linear, 1 for Rhys's function, 2 for cubic (default)
   this->hasGyroscope = driveParams.has_gyroscope;
 
-  if (botType == quarterback_old) {
-    this->BIG_BOOST_PCT = 0.8; 
-    this->BIG_NORMAL_PCT = 0.4; 
-    this->BIG_SLOW_PCT = 0.3;
-  } else if (botType == center) {
-    this->BIG_BOOST_PCT = 0.5;  
-    this->BIG_NORMAL_PCT = 0.4; 
-    this->BIG_SLOW_PCT = 0.25;
-  } else {
-    this->BIG_BOOST_PCT = 0.7;  
-    this->BIG_NORMAL_PCT = 0.6; 
-    this->BIG_SLOW_PCT = 0.3;
-  }
-
   // initialize arrays
   for (int i = 0; i < NUM_MOTORS; i++) {
     requestedMotorPower[i] = 0.0f;
@@ -72,6 +58,7 @@ Drive::Drive(BotType botType, drive_param_t driveParams) {
     turnMotorValues[i] = 0.0f;
   }
 
+  // setup turning parameters for all robots other than the mecanum center
   if (botType != mecanum_center) {
     // initialize parameters for turning model
     omega = 0;
@@ -177,7 +164,7 @@ void Drive::setSpeedScalar(Speed bns) {
     if (bns == Speed::BRAKE) 
         speedScalar = BRAKE_BUTTON_PCT;
     else
-        // Grab the predefined bns values from the 
+        // Grab the predefined bns values from the bns lookup table
         speedScalar = MOTORTYPE_BNS_ARRAY[static_cast<uint8_t>(motorType)][static_cast<uint8_t>(bns)];
 }
 

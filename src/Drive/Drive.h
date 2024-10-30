@@ -112,15 +112,4 @@ class Drive {
     void printSetup();
     virtual void printDebugInfo();
     virtual void printCsvInfo();
-
-    //* The following variables are initialized in the constructor
-    // maximum speed for these is 1.0
-    // percentage of power used when boosting for big motors
-    float BIG_BOOST_PCT;
-    
-    // default: 0.6, this is the typical percentage of power out of the motors' range that is used (to ensure they don't do seven wheelies)
-    float BIG_NORMAL_PCT;
-    
-    // should be a value less than BIG_NORMAL_PCT, to slow down for precision maneuvering, QB needs this to be 0.3
-    float BIG_SLOW_PCT;
 };
