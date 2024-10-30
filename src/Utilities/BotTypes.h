@@ -37,19 +37,6 @@ typedef enum {
   quarterback_turret
 } BotType;
 
-/** TurnFunction
- * enum to keep track of the desired turning function to use from the bot configuration
- * linear: the stick turning is a linear mapping to the R value in the turning algorithm
- * sigmoid: the stick turning is a sigmoid mapping to the R value in the turning algorithm
- * cubic: the stick turning is a x^3 mapping to the R value in the turning algorithm
- */
-typedef enum {
-  linear,
-  sigmoid,
-  cubic
-} TurnFunction;
-
-
 /**
  * @brief BotConfig robot configuration datastructure, 
  * used to read and write bot information to the esp 
