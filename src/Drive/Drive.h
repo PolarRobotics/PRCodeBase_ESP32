@@ -32,19 +32,11 @@
 #define STICK_DEADZONE 0.075 //0.0390625F // 8.0 / 127.0
 #define THRESHOLD 0.00001
 
+// the minimum power that can be written to the motor, prevents stalling
 #define MOTOR_ZERO_OFFST 0.05f
 
-// Motor Percent Defines
+// for the falcon motors to work correcly, a 100% motor power must be written to "learn" the maximum range
 #define FALCON_CALIBRATION_FACTOR 1.0f
-// the minimum power that can be written to the motor, prevents stalling
-#define FALCON_BOOST_PCT          0.70f
-#define FALCON_NORMAL_PCT         0.4f
-#define FALCON_SLOW_PCT           0.25f
-
-// BSN defines for the small 12v motors
-#define SMALL_12V_BOOST_PCT          0.15f
-#define SMALL_12V_NORMAL_PCT         0.1f // 0.5
-#define SMALL_12V_SLOW_PCT           0.05f
 
 #define BRAKE_BUTTON_PCT 0
 
@@ -56,7 +48,7 @@ constexpr float MOTORTYPE_BNS_ARRAY[NUM_MOTOR_TYPES][3] = {
   {0.85f,  0.70f,  0.40f}, // index 1: Small Ampflow Motor
   {0.70f,  0.60f,  0.30f}, // index 2: Pancake Ampflow Motor
   {0.80f,  0.60f,  0.40f}, // index 3: Mecanum Motor (Torquenado)
-  {0.60f,  0.40f,  0.15f}, // index 4: Falcon500 motors
+  {0.70f,  0.40f,  0.25f}, // index 4: Falcon500 motors
   {0.15f,  0.10f,  0.05f}  // index 5: Small 12v motors (old robots)
 };
 
