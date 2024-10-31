@@ -21,8 +21,10 @@ private:
   u_int16_t angleZero; // angle of the limit switch
   uint8_t kickerPin;
   uint8_t limitSwitchPin;
-  uint8_t kickerEncoderPinA;
-  uint8_t kickerEncoderPinB;
+  static uint8_t kickerEncoderPinA;
+  static uint8_t kickerEncoderPinB;
+  static uint8_t kickerEncoderStateB;
+  static int32_t currentKickerEncoderCount;
   MotorInterface windupMotor;
 
 public:
@@ -40,6 +42,7 @@ public:
   void stop();
   void homeKickingArm();
   void adjustAngle(int angle);
+  static void kickerEncoderISR();
   uint16_t getCurrentAngle();
 };
 
