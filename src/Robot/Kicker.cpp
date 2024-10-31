@@ -36,6 +36,12 @@ uint8_t Kicker::kickerEncoderPinB;
 uint8_t Kicker::kickerEncoderStateB;
 int32_t Kicker::currentKickerEncoderCount;
 
+/**
+ * @brief Kicker Encoder Counter
+ * @authors Maxwell Phillips, Corbin Hibler
+ * 
+ * Keeps track of the encoder count from the B signal pin
+ */
 void Kicker::kickerEncoderISR() {
   kickerEncoderStateB = digitalRead(kickerEncoderPinB);
 
