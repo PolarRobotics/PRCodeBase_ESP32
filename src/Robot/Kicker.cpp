@@ -11,12 +11,15 @@
  * 
  * @param kickerPin The pin of the kicker arm's motor
  * @param limitswitchPin the pin of the kicker arm's limit switch
+ * @param kickerEncoderPinA The pin of signal A from the encoder
+ * @param kickerEncoderPinB THe pin of signal B from the encoder
  */
-Kicker::Kicker(uint8_t kickerPin, uint8_t limitSwitchPin, uint8_t kickerEncoderPin) {
+Kicker::Kicker(uint8_t kickerPin, uint8_t limitSwitchPin, uint8_t kickerEncoderPinA, uint8_t kickerEncoderPinB) {
   enabled = false;
   this->kickerPin = kickerPin;
   this->limitSwitchPin = limitSwitchPin;
-  this->kickerEncoderPin = kickerEncoderPin;
+  this->kickerEncoderPinA = kickerEncoderPinA;
+  this->kickerEncoderPinB = kickerEncoderPinB;
   windupMotor.attach(kickerPin);
 }
 
@@ -90,8 +93,9 @@ void Kicker::stop() {
  */
 void Kicker::homeKickingArm() {
   if(enabled) {
-    if (limitSwitchPin) {
+    if (digitalRead(limitSwitchPin) == 1) {
       stop();
+      angleZero = getCurrentAngle();
       adjustAngle(15);
     } else {
       windupMotor.write(0.5);
@@ -118,9 +122,13 @@ void Kicker::homeKickingArm() {
  */
 void Kicker::adjustAngle(int angle) {
   if (enabled) {
+    uint16_t desiredAngle = angleZero + angle;
     windupMotor.write(-0.5);
-    // Wait until the correct angle is reached
-    stop();
+
+    // Keep rotating until desiredAngle is reached
+    if (getCurrentAngle() >= desiredAngle) {
+      stop();
+    }
   }
 }
 
@@ -128,8 +136,17 @@ void Kicker::adjustAngle(int angle) {
  * @brief Gets Current Angle of the Motor from Encoder
  * @author Corbin Hibler
  * 
+ * The gear ratio of the motor to the shaft is 1:108
+ * The encoder resolution is 11 counts per revolution of the motor
+ * Therefore the encoder resolution of the shaft is 11*108 = 1188 counts per revolution
+ * 1188 / 360 = 3.3 counts per degree 
+ * 
+ * 
  * @return The current angle that the motor is at
  */
-uint16_t getCurrentAngle() {
+uint16_t Kicker::getCurrentAngle() {
+  float valueCHA = digitalRead(kickerEncoderPinA);
+  float valueCHB = digitalRead(kickerEncoderPinB);
+
   return -1;
 }
