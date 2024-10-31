@@ -44,7 +44,8 @@ class ConfigManager {
     drive_param_t getDriveParams();
     const char * toString();
     bool setConfig(uint8_t botindex);
-    bool setConfig(uint8_t botindex, BotType bottype, MotorType motortype, float gearratio, float wheelbase, float r_min, float r_max);
+    bool setConfig(uint8_t botindex, BotType bottype, 
+      MotorType motortype, float gearratio, float wheelbase, float r_min, float r_max, bool hasencoders, TurnFunction turnfcn, bool hasgyro);
 };
 
 #endif // CFG_MGR_H

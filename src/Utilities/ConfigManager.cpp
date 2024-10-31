@@ -156,9 +156,9 @@ bool ConfigManager::write(bot_config_t* cfg) {
     preferences.putFloat("wheel_base", cfg->drive_params.wheel_base);
     preferences.putFloat("r_min", cfg->drive_params.r_min);
     preferences.putFloat("r_max", cfg->drive_params.r_max);
-    preferences.putUChar("has_encoders", cfg->drive_params.has_encoders);
+    preferences.putBool("has_encoders", cfg->drive_params.has_encoders);
     preferences.putUChar("turn_function", static_cast<uint8_t>(cfg->drive_params.turn_function));
-    preferences.putUChar("has_gyroscope", cfg->drive_params.has_gyroscope);
+    preferences.putBool("has_gyroscope", cfg->drive_params.has_gyroscope);
     // close the namespace
     preferences.end();
 
@@ -193,6 +193,9 @@ bool ConfigManager::setConfig(uint8_t botIndex) {
     this->config->drive_params.wheel_base = botConfigArray[botIndex].drive_params.wheel_base;
     this->config->drive_params.r_min = botConfigArray[botIndex].drive_params.r_min;
     this->config->drive_params.r_max = botConfigArray[botIndex].drive_params.r_max;
+    this->config->drive_params.has_encoders = botConfigArray[botIndex].drive_params.has_encoders;
+    this->config->drive_params.turn_function = botConfigArray[botIndex].drive_params.turn_function;
+    this->config->drive_params.has_gyroscope = botConfigArray[botIndex].drive_params.has_gyroscope;
 
     // write index to predefined configuration from the array defined in the header file
     return write(this->config);
@@ -209,10 +212,14 @@ bool ConfigManager::setConfig(uint8_t botIndex) {
  * @param wheelbase the distance between drive wheels
  * @param rmin the minimum turning radius the robot can achieve
  * @param rmax the maximum turning radius the robot can achieve  
+ * @param hasencoders
+ * @param turnfcn
+ * @param hsgyro
  * @return true configuration was successfully applied
  * @return false configuration check failed
  */
-bool ConfigManager::setConfig(uint8_t botindex, BotType bottype, MotorType motortype, float gearratio, float wheelbase, float rmin, float rmax) {
+bool ConfigManager::setConfig(uint8_t botindex, BotType bottype, 
+  MotorType motortype, float gearratio, float wheelbase, float rmin, float rmax, bool hasencoders, TurnFunction turnfcn, bool hasgyro) {
   if (this->writable) {
     this->config->index = botindex;
     this->config->bot_name = "Custom Robot";
@@ -222,7 +229,9 @@ bool ConfigManager::setConfig(uint8_t botindex, BotType bottype, MotorType motor
     this->config->drive_params.wheel_base = wheelbase;
     this->config->drive_params.r_min = rmin;
     this->config->drive_params.r_max = rmax;
-    
+    this->config->drive_params.has_encoders = hasencoders;
+    this->config->drive_params.turn_function = turnfcn;
+    this->config->drive_params.has_gyroscope = hasgyro;
     return write(this->config);
   } else return false;
 }
