@@ -80,7 +80,7 @@ void setup() {
     // A call to drive->setupMotors (or downcast and call to override)
     // An initialization of `lights` if needed depending on the bot type
     case kicker:
-      robot = new Kicker(SPECBOT_PIN1, SPECBOT_PIN2, ENC1_CHA);
+      robot = new Kicker(SPECBOT_PIN1, SPECBOT_PIN2, ENC1_CHA, ENC1_CHB);
       drive = new Drive(kicker, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
       break;
