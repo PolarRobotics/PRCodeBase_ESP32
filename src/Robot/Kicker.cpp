@@ -18,9 +18,32 @@ Kicker::Kicker(uint8_t kickerPin, uint8_t limitSwitchPin, uint8_t kickerEncoderP
   enabled = false;
   this->kickerPin = kickerPin;
   this->limitSwitchPin = limitSwitchPin;
+  windupMotor.attach(kickerPin);
+  
+  // Encoder Setup
   this->kickerEncoderPinA = kickerEncoderPinA;
   this->kickerEncoderPinB = kickerEncoderPinB;
-  windupMotor.attach(kickerPin);
+  this->currentKickerEncoderCount = 0;
+  pinMode(kickerEncoderPinA, INPUT_PULLUP);
+  pinMode(kickerEncoderPinB, INPUT);
+  attachInterrupt(kickerEncoderPinA, kickerEncoderISR, RISING);
+}
+
+
+// "Define" static members to satisfy linker
+uint8_t Kicker::kickerEncoderPinA;
+uint8_t Kicker::kickerEncoderPinB;
+uint8_t Kicker::kickerEncoderStateB;
+int32_t Kicker::currentKickerEncoderCount;
+
+void Kicker::kickerEncoderISR() {
+  kickerEncoderStateB = digitalRead(kickerEncoderPinB);
+
+  if (kickerEncoderStateB == 1) {
+    currentKickerEncoderCount++;
+  } else if (kickerEncoderStateB == 0) {
+    currentKickerEncoderCount--;
+  }
 }
 
 /**
@@ -131,6 +154,7 @@ void Kicker::adjustAngle(int angle) {
     }
   }
 }
+
 
 /**
  * @brief Gets Current Angle of the Motor from Encoder
