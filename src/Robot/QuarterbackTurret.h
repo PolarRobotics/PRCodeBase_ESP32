@@ -19,7 +19,7 @@
 #include <HardwareSerial.h>       // For ESP-to-ESP UART
 
 enum TurretMode {
-  manual, automatic
+  manual, automatic, combine
 };
 
 enum TurretUnits {
@@ -36,6 +36,10 @@ enum CradleState {
 
 enum TargetReceiver {
   receiver_1, receiver_2
+};
+
+enum CombinePosition {
+  combineLeft, combineStraight, combineRight
 };
 
 enum FlywheelSpeed {
@@ -171,6 +175,7 @@ class QuarterbackTurret : public Robot {
     // target: reciever1 or reciever2
     TurretMode mode;
     TargetReceiver target;
+    CombinePosition combinePosition;
 
     //==============================//
     //  Setup and Status Variables  //
@@ -252,7 +257,6 @@ class QuarterbackTurret : public Robot {
     int16_t targetRelativeHeading;        // default = 0
     int32_t currentRelativeTurretCount;   // default is undefined
     
-
     //========================================//
     //   Absolute (World Relative) Headings   //
     //========================================//
@@ -268,10 +272,13 @@ class QuarterbackTurret : public Robot {
     //================================//
     //    Control Input Debouncers    //
     //================================//
+    Debouncer* dbShare;
     Debouncer* dbOptions;
     Debouncer* dbSquare;
     Debouncer* dbDpadUp;
     Debouncer* dbDpadDown;
+    Debouncer* dbDpadLeft;
+    Debouncer* dbDpadRight;
 
     //===============================//
     //    Macro Button Debouncers    //
@@ -492,6 +499,7 @@ class QuarterbackTurret : public Robot {
     // handoff                    Hands the ball to the runningback
     void loadFromCenter();
     void handoff();
+    
     
     //==========================================//
     //  Public Encoder State Variables for ISR  //

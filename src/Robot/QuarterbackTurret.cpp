@@ -98,10 +98,13 @@ QuarterbackTurret::QuarterbackTurret(
   
   
   // initialize debouncers
+  this->dbShare = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
   this->dbOptions = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
   this->dbSquare = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
   this->dbDpadUp = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
   this->dbDpadDown = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
+  this->dbDpadLeft = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
+  this->dbDpadRight = new Debouncer(QB_BASE_DEBOUNCE_DELAY);
 
   this->dbCircle = new Debouncer(QB_CIRCLE_HOLD_DELAY);
   this->dbTriangle = new Debouncer(QB_TRIANGLE_HOLD_DELAY);
@@ -151,8 +154,14 @@ void QuarterbackTurret::action() {
         moveCradle(back);
       }
 
+      //* Share Button: Switch to Combine Mode
+      if (dbShare->debounceAndPressed(ps5.Share())) {
+        switchMode(combine);
+        this->combinePosition = combineStraight;
+        zeroTurret();
+      }
       //* Options (Button): Switch Mode (toggle between auto/manual targeting)
-      if (QB_AUTO_ENABLED && dbOptions->debounceAndPressed(ps5.Options())) {
+      else if (QB_AUTO_ENABLED && dbOptions->debounceAndPressed(ps5.Options())) {
         switchMode();
       }
       //* Left Button (L1): Switch Target to Receiver 1
@@ -173,10 +182,37 @@ void QuarterbackTurret::action() {
         stickFlywheel = (ps5.LStickY() / 127.5f);
         stickTurret = (ps5.RStickX() / 127.5f);  
 
+        if (mode == combine) {
+          //* Combine "Macro" Mode
+          // Overrides turret control
+          // Allows switching between 3 different angles (left, straight, right)
+          // Flywheel control is available as normal (set powers with override via stick)
+
+          //* D-Pad Left: Move left one position
+          if (dbDpadLeft->debounceAndPressed(ps5.Left())) {
+            if (this->combinePosition == combineStraight) {
+              this->combinePosition = combineLeft;
+              moveTurretAndWait(-45);
+            } else if (this->combinePosition == combineRight) {
+              this->combinePosition = combineStraight;
+              moveTurretAndWait(0);
+            }
+          } 
+          //* D-Pad Right: Move right one position
+          else if (dbDpadRight->debounceAndPressed(ps5.Right())) {
+            if (this->combinePosition == combineStraight) {
+              this->combinePosition = combineRight;
+              moveTurretAndWait(45);
+            } else if (this->combinePosition == combineLeft) {
+              this->combinePosition = combineStraight;
+              moveTurretAndWait(0);
+            }
+          }
+        } else  
         //* Right Stick X: Turret Control
         // Left = CCW, Right = CW
         if (fabs(stickTurret) > STICK_DEADZONE) {
-          //Check if magnetometer functionality is enabled
+          //* Use absolute positioning and position-based control iff. magnetometer functionality is enabled
           if (useMagnetometer && holdTurretStillEnabled) {
             // only change position every 4 loops
             if (manualHeadingIncrementCount == 0) {
@@ -190,7 +226,9 @@ void QuarterbackTurret::action() {
             //Serial.println(targetAbsoluteHeading);
             calculateHeadingMag();
             holdTurretStill();
-          } else {
+          } 
+          //* Use relative positioning and speed-based control
+          else {
             setTurretSpeed(stickTurret * QB_TURRET_STICK_SCALE_FACTOR);
           }
         } else {
