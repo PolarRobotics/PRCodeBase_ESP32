@@ -563,7 +563,7 @@ void QuarterbackTurret::handoff() {
   aimAssembly(straight);
   int16_t targetHeading = (getCurrentHeading() + 130) % 360;
   calculateHeadingMag();
-  targetAbsoluteHeading = headingdeg +180;
+  targetAbsoluteHeading = headingDeg +180;
   targetAbsoluteHeading%=360;
 
   if (useMagnetometer) {
@@ -618,9 +618,6 @@ void QuarterbackTurret::testRoutine() {
 
 void QuarterbackTurret::zeroTurret() {
   this->runningMacro = true;
-
-  //Zero the accelerometer while everything is sitting still (hopefully)
-  accelerometerSetup();
 
   //Printouts for starting zeroing
   Serial.println(F("zero called"));
@@ -961,16 +958,16 @@ void QuarterbackTurret::magnetometerSetup() {
 */
 void QuarterbackTurret::calibMagnetometer() {
 
-    yVal = 0;
-    xVal = 0;
-    maxX = -1000000;
-    minX = 1000000;
-    xHalf = 0;
-    maxY = -1000000;
-    minY = 1000000;
-    yHalf = 0;
-    xsign = false;
-    ysign = false;
+    mag_yVal = 0;
+    mag_xVal = 0;
+    mag_xMax = -1000000;
+    mag_xMin = 1000000;
+    mag_xHalf = 0;
+    mag_yMax = -1000000;
+    mag_yMin = 1000000;
+    mag_yHalf = 0;
+    mag_xSign = false;
+    mag_ySign = false;
 
     northHeadingDegrees = 0;
   
@@ -984,48 +981,48 @@ void QuarterbackTurret::calibMagnetometer() {
       lis3mdl.read();      
 
       //Constantly looking for min and max values of X
-      if (lis3mdl.x < minX && lis3mdl.x != -1 && lis3mdl.x != 0) {minX = lis3mdl.x;}
-      else if (lis3mdl.x > maxX && lis3mdl.x != -1 && lis3mdl.x != 0) {maxX = lis3mdl.x;}
+      if (lis3mdl.x < mag_xMin && lis3mdl.x != -1 && lis3mdl.x != 0) {mag_xMin = lis3mdl.x;}
+      else if (lis3mdl.x > mag_xMax && lis3mdl.x != -1 && lis3mdl.x != 0) {mag_xMax = lis3mdl.x;}
 
       //Adjusting X values to range from + or - values rather than all positive
-      xHalf = abs(maxX) - abs(minX);
-      xHalf/= 2;
-      xHalf+= abs(minX);
+      mag_xHalf = abs(mag_xMax) - abs(mag_xMin);
+      mag_xHalf/= 2;
+      mag_xHalf+= abs(mag_xMin);
 
       //Constantly looking for min and max values of Y
-      if (lis3mdl.y < minY && lis3mdl.y != -1 && lis3mdl.y != 0 && lis3mdl.y != 10) {minY = lis3mdl.y;}
-      else if (lis3mdl.y > maxY && lis3mdl.y != -1 && lis3mdl.y != 0 && lis3mdl.y != 10) {maxY = lis3mdl.y;}
+      if (lis3mdl.y < mag_yMin && lis3mdl.y != -1 && lis3mdl.y != 0 && lis3mdl.y != 10) {mag_yMin = lis3mdl.y;}
+      else if (lis3mdl.y > mag_yMax && lis3mdl.y != -1 && lis3mdl.y != 0 && lis3mdl.y != 10) {mag_yMax = lis3mdl.y;}
 
       //Adjusting Y values to range from + or - values rather than all positive
-      yHalf = abs(maxY) - abs(minY);
-      yHalf/= 2;
-      yHalf+= abs(minY);
+      mag_yHalf = abs(mag_yMax) - abs(mag_yMin);
+      mag_yHalf/= 2;
+      mag_yHalf+= abs(mag_yMin);
     
       /*DEBUGGING PRINTOUTS*/
       //Serial.print("X:  "); Serial.print(lis3mdl.x); 
       //Serial.print("\tY:  "); Serial.print(lis3mdl.y); 
-      //Serial.print("\tMinX:  "); Serial.print(minX); 
-      //Serial.print("\tMaxX:  "); Serial.print(maxX); 
-      //Serial.print("\tMinY:  "); Serial.print(minY); 
-      //Serial.print("\tMaxY:  "); Serial.print(maxY); 
+      //Serial.print("\tMinX:  "); Serial.print(mag_xMin); 
+      //Serial.print("\tMaxX:  "); Serial.print(mag_xMax); 
+      //Serial.print("\tMinY:  "); Serial.print(mag_yMin); 
+      //Serial.print("\tMaxY:  "); Serial.print(mag_yMax); 
       //Serial.println();    
     }
 
     setTurretSpeed(0, true);
 
     //Updating variables that will be used to handle other two possible sign cases for each value
-    if ((maxX+minX) < 0) {
-      xsign = true;
+    if ((mag_xMax+mag_xMin) < 0) {
+      mag_xSign = true;
     }
-    if ((maxY+minY) < 0) {
-      ysign = true;
+    if ((mag_yMax+mag_yMin) < 0) {
+      mag_ySign = true;
     }
     //
 
     calculateHeadingMag();
 
     Serial.print(F("Magnetometer reading after calib: "));
-    Serial.print(headingdeg);
+    Serial.print(headingDeg);
     Serial.print(F("\tEncoder after calib:"));
     Serial.print(currentTurretEncoderCount);
 
@@ -1039,19 +1036,19 @@ void QuarterbackTurret::calibMagnetometer() {
 
     magnetometerCalibrated = true;
 
-    calculateHeadingMag(); // calculate current value of magnetometer (headingdeg)
+    calculateHeadingMag(); // calculate current value of magnetometer (headingDeg)
 
     Serial.print("Target Abs Heading Before 0: ");
     Serial.print(targetAbsoluteHeading);
     Serial.print("\tNorth Heading Degrees: ");
-    this->northHeadingDegrees = headingdeg;// + 45;
+    this->northHeadingDegrees = headingDeg;// + 45;
     Serial.print(northHeadingDegrees);
     Serial.println();
 
     // delay(2000);
 
-    // from here on out, headingdeg and targetAbsoluteHeading are offset by northHeadingDegrees
-    // headingdeg = 0;    
+    // from here on out, headingDeg and targetAbsoluteHeading are offset by northHeadingDegrees
+    // headingDeg = 0;    
     targetAbsoluteHeading = 0;
 
     Serial.println("Magnetometer has been calibrated!");
@@ -1071,52 +1068,52 @@ void QuarterbackTurret::calculateHeadingMag() {
   if (magnetometerCalibrated) {
     lis3mdl.read(); 
     //Calculate the current angle of the turret based on the calibration data
-    if (xsign) {
-      xVal = lis3mdl.x + xHalf;
+    if (mag_xSign) {
+      mag_xVal = lis3mdl.x + mag_xHalf;
     } else {
-      xVal = lis3mdl.x - xHalf;
+      mag_xVal = lis3mdl.x - mag_xHalf;
     }
 
-    if (ysign) {
-      yVal = lis3mdl.y + yHalf;
+    if (mag_ySign) {
+      mag_yVal = lis3mdl.y + mag_yHalf;
     } else {
-      yVal = lis3mdl.y - yHalf;
+      mag_yVal = lis3mdl.y - mag_yHalf;
     }
     
     //Evaluate both ranges of X and Y then scale the smaller value to be within the same range as the larger
-    if (yHalf > xHalf) {
-      xVal = (double)((double)xVal/((double)xHalf))*(double)yHalf;
-    } else if (xHalf > yHalf) {
-      yVal = (double)((double)yVal/((double)yHalf))*(double)xHalf;
+    if (mag_yHalf > mag_xHalf) {
+      mag_xVal = (double)((double)mag_xVal/((double)mag_xHalf))*(double)mag_yHalf;
+    } else if (mag_xHalf > mag_yHalf) {
+      mag_yVal = (double)((double)mag_yVal/((double)mag_yHalf))*(double)mag_xHalf;
     }
     
     //Calculate angle in radians
-    if (xVal != -1 && xVal !=0 && yVal != 0 && yVal != -1) {
-      headingrad = atan2(yVal, xVal);
+    if (mag_xVal != -1 && mag_xVal !=0 && mag_yVal != 0 && mag_yVal != -1) {
+      headingRad = atan2(mag_yVal, mag_xVal);
     }
 
     //Convert to degrees
-    headingdeg = headingrad*180/M_PI;
+    headingDeg = headingRad*180/M_PI;
 
     //If the degrees are negative then they just need inversed plus 180
-    if (headingdeg < 0) {
-      headingdeg += 360;
+    if (headingDeg < 0) {
+      headingDeg += 360;
     }
 
     // integrate offset into measurement
-    headingdeg = ((int) headingdeg) /*+ 180 /*- QB_NORTH_OFFSET -*/ + northHeadingDegrees;
-    if (headingdeg > 360) headingdeg = ((int) headingdeg) % 360; 
+    headingDeg = ((int) headingDeg) /*+ 180 /*- QB_NORTH_OFFSET -*/ + northHeadingDegrees;
+    if (headingDeg > 360) headingDeg = ((int) headingDeg) % 360; 
 
     /*DEBUGGING PRINTOUTS*/
     //Serial.print("X:  "); Serial.print(lis3mdl.x); 
     //Serial.print("\tY:  "); Serial.print(lis3mdl.y); 
-    //Serial.print("\tMinX:  "); Serial.print(minX); 
-    //Serial.print("\tMaxX:  "); Serial.print(maxX); 
-    //Serial.print("\tMinY:  "); Serial.print(minY); 
-    //Serial.print("\tMaxY:  "); Serial.print(maxY); 
-    //Serial.print("\txAdapt:  "); Serial.print(xVal);
-    //Serial.print("\tyAdapt:  "); Serial.print(yVal);
-    //Serial.print("\tHeading [deg]:   "); Serial.print(headingdeg);
+    //Serial.print("\tMinX:  "); Serial.print(mag_xMin); 
+    //Serial.print("\tMaxX:  "); Serial.print(mag_xMax); 
+    //Serial.print("\tMinY:  "); Serial.print(mag_yMin); 
+    //Serial.print("\tMaxY:  "); Serial.print(mag_yMax); 
+    //Serial.print("\txAdapt:  "); Serial.print(mag_xVal);
+    //Serial.print("\tyAdapt:  "); Serial.print(mag_yVal);
+    //Serial.print("\tHeading [deg]:   "); Serial.print(headingDeg);
     //Serial.println();
     }
 }
@@ -1133,8 +1130,6 @@ void QuarterbackTurret::holdTurretStill() {
       //We should limit the rotation rate of the turret since the base is moving as well and we don't want the robot to flip
       maxSpeed = .125;
     }
-    //Get the acceleration values since this will be useful in the PID loop and if PID is enabled the accelerometer should be as well
-    calculateAcceleration();
 
     //Run the PID loop
     turretPIDSpeed = turretPIDController(targetAbsoluteHeading, kp, kd, ki, .2);
@@ -1159,16 +1154,16 @@ float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, f
   if (deltaT > QB_TURRET_PID_MIN_DELTA_T && deltaT < QB_TURRET_PID_MAX_DELTA_T) {
 
     //Find which direction will be closer to requested angle
-    int e = CalculateRotation(headingdeg, targetAbsoluteHeading);
+    int e = CalculateRotation(headingDeg, targetAbsoluteHeading);
 
     //Taking the average of the error
     prevErrorVals[prevErrorIndex] = e;
     prevErrorIndex++;
-    prevErrorIndex %= errorAverageLength;
+    prevErrorIndex %= MAG_ERROR_AVG_ARRAY_LENGTH;
 
     //For the first one populate the average so it does not freak out
     if (firstAverage) {
-      for (int i = 0; i<errorAverageLength; i++) {
+      for (int i = 0; i<MAG_ERROR_AVG_ARRAY_LENGTH; i++) {
         prevErrorVals[i] = e;
       }
       firstAverage = false;
@@ -1176,10 +1171,10 @@ float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, f
 
     //Taking the avergage for error
     int avgError = 0;
-    for (int i = 0; i < errorAverageLength; i++) {
+    for (int i = 0; i < MAG_ERROR_AVG_ARRAY_LENGTH; i++) {
       avgError += prevErrorVals[i];
     }
-    avgError /= errorAverageLength;
+    avgError /= MAG_ERROR_AVG_ARRAY_LENGTH;
     e = avgError;
 
     //Calculate the derivative and integral values
@@ -1210,7 +1205,7 @@ float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, f
     //Serial.print("\tI: "); Serial.print((ki * eIntegral), 4);
     //Serial.print("\tD:\t"); Serial.print((kd*eDerivative) , 4);
     //Serial.print("\tPWM Value: "); Serial.print(u , 4);
-    //Serial.print("\tCurrent [deg]: "); Serial.print(headingdeg, 0);
+    //Serial.print("\tCurrent [deg]: "); Serial.print(headingDeg, 0);
     //Serial.print("\tTarget [deg]: "); Serial.print(targetAbsoluteHeading);
     //Serial.println();
 
@@ -1268,158 +1263,5 @@ void QuarterbackTurret::updateReadMotorValues() {
   Serial.print(motor1Value);
   Serial.print("\tMotor2: ");
   Serial.print(motor2Value);
-  Serial.println();
-}
-
-void QuarterbackTurret::accelerometerSetup() {
-    accelerometer.begin();
-    
-    calibrationXSum = 0;
-    calibrationYSum = 0;
-    int16_t x,y,z;
-    for (int i = 0; i < ACCEL_CALIB_AVG_SIZE; i++) {
-        accelerometer.getXYZ(&x,&y,&z);float ax,ay,az;
-        accelerometer.getAcceleration(&ax,&ay,&az);
-        calibrationXSum += ax;
-        calibrationYSum += ay;
-    }
-
-    calibrationXValue = calibrationXSum / ACCEL_CALIB_AVG_SIZE;
-    calibrationYValue = calibrationYSum / ACCEL_CALIB_AVG_SIZE;
-}
-
-void QuarterbackTurret::calculateAcceleration() {
-  int16_t x,y,z;
-  float accelerationXSum = 0;
-  float accelerationYSum = 0;
-
-  //Reading data from the accelerometer multiple times to get a good average since it fluctuates so much
-  for (int i = 0; i < ACCEL_AVG_SIZE; i++) {
-    accelerometer.getXYZ(&x,&y,&z);   
-    accelerometer.getAcceleration(&ax,&ay,&az);
-    accelerationXSum += (ax - calibrationXValue);
-    accelerationYSum += (ay - calibrationYValue);
-  }
-
-  //Calculating the min and max acceleration values seen and keeping that information for debugging purposes (X-Axis)
-  currentAccelX = accelerationXSum / ACCEL_AVG_SIZE;
-  if (currentAccelX < minXAccel) {
-    minXAccel = currentAccelX;
-  }
-  if (currentAccelX > maxXAccel) {
-    maxXAccel = currentAccelX;
-  }
-
-  //Calculating the min and max acceleration values seen and keeping that information for debugging purposes (Y-Axis)
-  currentAccelY = accelerationYSum / ACCEL_AVG_SIZE;
-  if (currentAccelY < minYAccel) {
-    minYAccel = currentAccelY;
-  }
-  if (currentAccelY > maxYAccel) {
-    maxYAccel = currentAccelY;
-  }
-
-  //If the current acceleration does not exceed the deadzone then it is probably just noise and can be ignored (X-Axis)
-  if (abs(currentAccelX) < ACCEL_DEADZONE) {
-    currentAccelX = 0;
-  }
-
-  //If the current acceleration does not exceed the deadzone then it is probably just noise and can be ignored (Y-Axis)
-  if (abs(currentAccelY) < ACCEL_DEADZONE) {
-    currentAccelY = 0;
-  }
-
-  //Keeping a moving average (X-Axis)
-  movingAverageX[movingAverageXIndex] = currentAccelX;
-  movingAverageXIndex++;
-  movingAverageXIndex%=10;
-
-  //Keeping a moving average (Y-Axis)
-  movingAverageY[movingAverageYIndex] = currentAccelY;
-  movingAverageYIndex++;
-  movingAverageYIndex%=10;
-
-  //Calculating the average based off of the last few iterations (X-Axis)
-  for (int i = 0; i < 10; i++) {
-    calcAverage+= movingAverageX[i];
-  }
-  calcAverage/=10;
-  prevmovingAverageX[prevmovingAverageXIndex] = calcAverage;
-  prevmovingAverageXIndex++;
-  prevmovingAverageXIndex%=10;
-
-  //Calculating the average based off of the last few iterations (Y-Axis)
-  for (int i = 0; i < 10; i++) {
-    calcAverage+= movingAverageY[i];
-  }
-  calcAverage/=10;
-  prevmovingAverageY[prevmovingAverageYIndex] = calcAverage;
-  prevmovingAverageYIndex++;
-  prevmovingAverageYIndex%=10;
-  
-
-  //Keepign the previous moving average values recorded so that we can calculate the total range and decide if we need to reset to avoid error buildup (X-Axis)
-  prevMovingAvgMin = 100000;
-  prevMovingAvgMax = -1000000;
-  for (int i = 0; i <10; i++) {
-    if (prevmovingAverageX[i] < prevMovingAvgMin) {
-      prevMovingAvgMin = prevmovingAverageX[i];
-    }
-    if (prevmovingAverageX[i] > prevMovingAvgMax) {
-      prevMovingAvgMax = prevmovingAverageX[i];
-    }
-  }
-  if (abs(prevMovingAvgMax-prevMovingAvgMin) < .1 && accelXRunningSum != 0) {
-      for (int i = 0; i < 10; i++) {
-        movingAverageX[i] = 0;
-      }
-      for (int i =0; i< 10; i++) {
-        prevmovingAverageX[i] = 0;
-      }
-      calcAverage = 0;
-      accelXRunningSum = 0;
-      Serial.println("Reset error X");
-  }
-
-  //Keepign the previous moving average values recorded so that we can calculate the total range and decide if we need to reset to avoid error buildup (Y-Axis)
-  prevMovingAvgMin = 100000;
-  prevMovingAvgMax = -1000000;
-  for (int i = 0; i <10; i++) {
-    if (prevmovingAverageY[i] < prevMovingAvgMin) {
-      prevMovingAvgMin = prevmovingAverageY[i];
-    }
-    if (prevmovingAverageY[i] > prevMovingAvgMax) {
-      prevMovingAvgMax = prevmovingAverageY[i];
-    }
-  }
-  if (abs(prevMovingAvgMax-prevMovingAvgMin) < .1 && accelYRunningSum != 0) {
-      for (int i = 0; i < 10; i++) {
-        movingAverageY[i] = 0;
-      }
-      for (int i =0; i< 10; i++) {
-        prevmovingAverageY[i] = 0;
-      }
-      calcAverage = 0;
-      accelYRunningSum = 0;
-      Serial.println("Reset error Y");
-  }
-
-  //Keeping a running sum of both X and Y axis accelerations
-  accelXRunningSum += currentAccelX;
-  accelYRunningSum += currentAccelY;
-
-  //Debugging printouts
-  Serial.print("Current Accel: ");
-  Serial.print(currentAccelX);
-  Serial.print("\tMax: ");
-  Serial.print(maxXAccel);
-  Serial.print("\tMin: ");
-  Serial.print(minXAccel);
-  Serial.print("\tMove Avg: ");
-  Serial.print(calcAverage);
-  Serial.print("\tRunning Sum: ");
-  Serial.print(accelXRunningSum);
-  Serial.print("\tRange: ");
-  Serial.print(abs(prevMovingAvgMax-prevMovingAvgMin));
   Serial.println();
 }
