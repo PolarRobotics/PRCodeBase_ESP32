@@ -121,13 +121,12 @@ void Kicker::stop() {
  * 
  */
 void Kicker::homeKickingArm() {
-  if (digitalRead(limitSwitchPin) == 1) {
-    stop();
-    angleZero = getCurrentAngle();
-    adjustAngle(15);
-  } else {
+  while(digitalRead(limitSwitchPin) == 0) {
     windupMotor.write(0.5);
   }
+  stop();
+  angleZero = getCurrentAngle();
+  adjustAngle(15);
 }
 
 /**
@@ -149,12 +148,12 @@ void Kicker::homeKickingArm() {
  */
 void Kicker::adjustAngle(int angle) {
   uint16_t desiredAngle = angleZero + angle;
-  windupMotor.write(-0.5);
 
   // Keep rotating until desiredAngle is reached
-  if (getCurrentAngle() >= desiredAngle) {
-    stop();
+  while (getCurrentAngle() < desiredAngle) {
+    windupMotor.write(-0.5);
   }
+  stop();
 }
 
 
@@ -171,8 +170,6 @@ void Kicker::adjustAngle(int angle) {
  * @return The current angle that the motor is at
  */
 uint16_t Kicker::getCurrentAngle() {
-  float valueCHA = digitalRead(kickerEncoderPinA);
-  float valueCHB = digitalRead(kickerEncoderPinB);
-
-  return -1;
+  uint16_t currentAngle = currentKickerEncoderCount / KICKER_COUNTS_PER_ARM_DEGREE;
+  return currentAngle;
 }
