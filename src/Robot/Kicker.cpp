@@ -121,14 +121,12 @@ void Kicker::stop() {
  * 
  */
 void Kicker::homeKickingArm() {
-  if(enabled) {
-    if (digitalRead(limitSwitchPin) == 1) {
-      stop();
-      angleZero = getCurrentAngle();
-      adjustAngle(15);
-    } else {
-      windupMotor.write(0.5);
-    }
+  if (digitalRead(limitSwitchPin) == 1) {
+    stop();
+    angleZero = getCurrentAngle();
+    adjustAngle(15);
+  } else {
+    windupMotor.write(0.5);
   }
 }
 
@@ -150,14 +148,12 @@ void Kicker::homeKickingArm() {
  * @param angle The angle that you want to add to the current angle of the kicker arm.
  */
 void Kicker::adjustAngle(int angle) {
-  if (enabled) {
-    uint16_t desiredAngle = angleZero + angle;
-    windupMotor.write(-0.5);
+  uint16_t desiredAngle = angleZero + angle;
+  windupMotor.write(-0.5);
 
-    // Keep rotating until desiredAngle is reached
-    if (getCurrentAngle() >= desiredAngle) {
-      stop();
-    }
+  // Keep rotating until desiredAngle is reached
+  if (getCurrentAngle() >= desiredAngle) {
+    stop();
   }
 }
 
