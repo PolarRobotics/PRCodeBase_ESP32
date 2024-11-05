@@ -34,6 +34,7 @@ class Robot {
     // Virtual function to perform any loop actions for special robots
     // `virtual` keyword required to enable runtime polymorphism (i.e. actually use overrides)
     virtual void action() = 0;
+    virtual void homeKickingArm(); // Special case for kicker to automatically home itself on startup.
 };
 
 #endif // ROBOT_H
