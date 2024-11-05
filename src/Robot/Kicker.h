@@ -12,27 +12,32 @@
 #define KICKER_COUNTS_PER_ARM_DEGREE 3.3
 
 /**
- * @brief Kicker header file
- * @authors Andrew Nelson
+ * @brief Kicker Class
+ * 
+ * Contains logic for the operation of the encoder, motorized kicking arm, and adjusting the angle
+ * automatically upon startup. Other features include manual control of kicking arm in case the
+ * automatic system fails.
+ * 
+ * @authors Andrew Nelson, Corbin Hibler
  */
 class Kicker : public Robot {
 private:
-  bool enabled; // safety feature
-  u_int16_t angleZero; // angle of the limit switch
-  uint8_t kickerPin;
-  uint8_t limitSwitchPin;
-  static uint8_t kickerEncoderPinA;
-  static uint8_t kickerEncoderPinB;
-  static uint8_t kickerEncoderStateB;
-  static int32_t currentKickerEncoderCount;
-  MotorInterface windupMotor;
+  bool enabled; // Safety feature to ensure robot does not act when it is not supposed to.
+  u_int16_t angleZero; // Angle of the limit switch.
+  uint8_t kickerPin; // Pin to control the motor of the kicker arm
+  uint8_t limitSwitchPin; // Pin to connect to the limit switch
+  static uint8_t kickerEncoderPinA; // Signal Pin for channel A of the encoder
+  static uint8_t kickerEncoderPinB; // Signal Pin for channel B of the encoder
+  static uint8_t kickerEncoderStateB; // Keeps track of the current state of channel B
+  static int32_t currentKickerEncoderCount; // Encoder count of kicker arm motor encoder
+  MotorInterface windupMotor; // MotorInterface instantation for the kicker arm motor
 
 public:
   Kicker(
-    uint8_t kickerPin, 
-    u_int8_t limitSwitchPin, 
-    uint8_t kickerEncoderPinA, 
-    u_int8_t kickerEncoderPinB
+    uint8_t kickerPin, // Pin to control the motor of the kicker arm
+    u_int8_t limitSwitchPin, // Pin to connect to the limit switch
+    uint8_t kickerEncoderPinA, // Signal Pin for channel A of the encoder
+    u_int8_t kickerEncoderPinB // Signal Pin for channel B of the encoder
   );
   void action() override; //! robot subclass must override action
   void enable();

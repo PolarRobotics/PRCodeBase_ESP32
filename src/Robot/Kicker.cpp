@@ -53,14 +53,14 @@ void Kicker::kickerEncoderISR() {
 }
 
 /**
- * @brief Manual Action
+ * @brief Kicker Action
  * 
  * Manually control the motor using the Triangle and X (cross) buttons.
  * Triangle for winding
  * Cross for unwinding
  */
 void Kicker::action() {
-  // Control the motor on the kicker
+  // Control the motor on the kicker manually
   if (ps5.Triangle())
     turnForward();
   else if (ps5.Cross())
