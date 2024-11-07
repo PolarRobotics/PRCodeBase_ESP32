@@ -40,6 +40,7 @@ QuarterbackTurret::QuarterbackTurret(
   this->enabled = false; // initially disable robot for safety
   this->initialized = false;
   this->runningMacro = false;
+  this->currentAssemblyAngle = unknownAngle;
   this->targetAssemblyAngle = straight; // while the initial state is unknown, we want it to be straight
   this->assemblyMoving = false; // it is safe to assume the assembly is not moving
 
@@ -152,6 +153,16 @@ void QuarterbackTurret::action() {
         moveCradle(forward);
       } else {
         moveCradle(back);
+      }
+
+      //* Left Trigger (L2): Toggle Assembly Angle
+      if (ps5.L2()) {
+        // if angled or unknown, move to straight angle. else, move to firing angle.
+        if (currentAssemblyAngle == unknownAngle || currentAssemblyAngle == angled) {
+          aimAssembly(straight);
+        } else if (currentAssemblyAngle == straight) {
+          aimAssembly(angled);
+        }
       }
 
       //* Share Button: Switch to Combine Mode
@@ -456,15 +467,52 @@ int16_t QuarterbackTurret::findNearestHeading(int16_t targetHeading) {
   return findNearestHeading(targetHeading, currentRelativeHeading);
 }
 
-void QuarterbackTurret::aimAssembly(AssemblyAngle angle) {
-  // todo 
+void QuarterbackTurret::aimAssembly(AssemblyAngle angle, bool force) {
   if (enabled) {
-    // go to angle
+    if (!assemblyMoving) {
+      targetAssemblyAngle = angle;
+
+      if (targetAssemblyAngle != currentAssemblyAngle || force) {
+        moveAssemblySubroutine();
+      }
+
+      //* force is a blocking routine to ensure it works without interruption
+      //* do not use force frequently as it can strain the motor
+      //* this should only be used on startup
+      if (force) {
+        // also allow emergency stop
+        while ((millis() - assemblyStartTime) <= QB_ASSEMBLY_TILT_DELAY && !testForDisableOrStop()) {
+          NOP();
+        }
+        currentAssemblyAngle = targetAssemblyAngle;
+        assemblyMoving = false;
+        assemblyMotor.write(0);
+      }
+
+    } else if ((millis() - assemblyStartTime) > QB_ASSEMBLY_TILT_DELAY) {
+      currentAssemblyAngle = targetAssemblyAngle;
+      assemblyMoving = false;
+      assemblyMotor.write(0);
+    }
   } else {
-    // write 0
+    assemblyMotor.write(0);
   }
 }
 
+//! this is a dangerous function to call
+// should only be called with known good state
+void QuarterbackTurret::moveAssemblySubroutine() {
+  if (targetAssemblyAngle == straight) {
+    assemblyMotor.write(0.5);
+  } else if (targetAssemblyAngle == angled) {
+    assemblyMotor.write(-0.5);
+  }
+  assemblyStartTime = millis();
+  assemblyMoving = true;
+}
+
+//! this is a dangerous function to call
+// should only be called with known good state
 void QuarterbackTurret::moveCradleSubroutine() {
   // Serial.print(F("target neq current  | "));
   if (targetCradleState == forward) {
@@ -864,6 +912,7 @@ void QuarterbackTurret::reset() {
   this->enabled = true;
   this->runningMacro = true;
   moveCradle(back, true); // force
+  aimAssembly(straight);
   // loadFromCenter();
   zeroTurret(); // temp: just zero
   this->initialized = true;

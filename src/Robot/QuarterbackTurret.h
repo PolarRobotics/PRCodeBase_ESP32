@@ -27,7 +27,7 @@ enum TurretUnits {
 };
 
 enum AssemblyAngle {
-  straight, angled
+  straight, angled, unknownAngle
 };
 
 enum CradleState {
@@ -54,6 +54,7 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 // 50 ms for default delay (50L)
 // 750 ms to fully extend or retract the linear actuator
 #define QB_BASE_DEBOUNCE_DELAY 50L
+#define QB_ASSEMBLY_TILT_DELAY 250L
 #define QB_CRADLE_TRAVEL_DELAY 750L
 #define QB_CIRCLE_HOLD_DELAY 750L
 #define QB_TRIANGLE_HOLD_DELAY 200L
@@ -150,6 +151,7 @@ class QuarterbackTurret : public Robot {
     //==============================//
     MotorControl cradleActuator;
     MotorControl turretMotor;
+    MotorControl assemblyMotor; 
     MotorControl flywheelLeftMotor;
     MotorControl flywheelRightMotor;
     
@@ -171,7 +173,7 @@ class QuarterbackTurret : public Robot {
     //==============================//
     //     Autonomous Targeting     //
     //==============================//
-    // mode: manual or autonomous
+    // mode: manual or autonomous (or combine)
     // target: reciever1 or reciever2
     TurretMode mode;
     TargetReceiver target;
@@ -197,6 +199,7 @@ class QuarterbackTurret : public Robot {
     AssemblyAngle currentAssemblyAngle;
     AssemblyAngle targetAssemblyAngle;
     bool assemblyMoving;
+    uint32_t assemblyStartTime;
 
     //===============================//
     //  Ball Cradle State Variables  //
@@ -399,6 +402,7 @@ class QuarterbackTurret : public Robot {
     //=============================//
     //   Misc. Private Functions   //
     //=============================//
+    void moveAssemblySubroutine();
     void moveCradleSubroutine();
     void moveTurret(int16_t heading, TurretUnits units, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = false); 
     void updateTurretMotionStatus();
@@ -477,7 +481,7 @@ class QuarterbackTurret : public Robot {
     void moveTurret(int16_t heading, bool relativeToRobot = true, bool ramp = true); 
     void moveTurret(int16_t heading, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = true);
     void moveTurretAndWait(int16_t heading, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = true);
-    void aimAssembly(AssemblyAngle angle); 
+    void aimAssembly(AssemblyAngle angle, bool force = false); 
     void moveCradle(CradleState state, bool force = false); 
     void setFlywheelSpeed(float absoluteSpeed); 
     void setFlywheelSpeedStage(FlywheelSpeed stage); 
