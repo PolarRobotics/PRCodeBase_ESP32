@@ -156,9 +156,13 @@ void QuarterbackTurret::action() {
 
       //* Share Button: Switch to Combine Mode
       if (dbShare->debounceAndPressed(ps5.Share())) {
-        switchMode(combine);
-        this->combinePosition = combineStraight;
-        zeroTurret();
+        if (mode != combine) {
+          switchMode(combine);
+          this->combinePosition = combineStraight;
+          zeroTurret();
+        } else {
+          switchMode(manual);
+        }
       }
       //* Options (Button): Switch Mode (toggle between auto/manual targeting)
       else if (QB_AUTO_ENABLED && dbOptions->debounceAndPressed(ps5.Options())) {
