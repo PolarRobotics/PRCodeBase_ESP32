@@ -83,7 +83,6 @@ void setup() {
       robot = new Kicker(SPECBOT_PIN1, SPECBOT_PIN2, ENC1_CHA, ENC1_CHB);
       drive = new Drive(kicker, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
-      robot->homeKickingArm(); // Special case for kicker to automatically home itself on startup.
       break;
     case quarterback_old:
       robot = new Quarterback(SPECBOT_PIN1, SPECBOT_PIN2, SPECBOT_PIN3);
