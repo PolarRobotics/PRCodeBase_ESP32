@@ -1,27 +1,25 @@
-/*Max Statements
+/*
   Question: Why are there so many #defines commented out?
   Answer: Documentation purposes.
 
   Question: Why not just use the #defines as they are written to generate the values?
   Answer: I don't trust the preprocessor. -MP
-
 */
 
-#pragma once
+//* Use https://blocks.jkniest.dev/ to generate comment block headers
 
 #ifndef QUARTERBACK_TURRET_H
 #define QUARTERBACK_TURRET_H
 
 #include <Robot/Robot.h>
 #include <Robot/MotorControl.h>
-#include <ps5Controller.h> // ESP PS5 library, access using global instance `ps5`
+#include <ps5Controller.h>        // ESP PS5 library, access using global instance `ps5`
 #include <Utilities/Debouncer.h>
-#include <Adafruit_LIS3MDL.h>
-#include <HardwareSerial.h>
-#include "ADXL335.h"
+#include <Adafruit_LIS3MDL.h>     // Magnetometer
+#include <HardwareSerial.h>       // For ESP-to-ESP UART
 
 enum TurretMode {
-  manual, automatic
+  manual, automatic, combine
 };
 
 enum TurretUnits {
@@ -29,7 +27,7 @@ enum TurretUnits {
 };
 
 enum AssemblyAngle {
-  straight, angled
+  straight, angled, unknownAngle
 };
 
 enum CradleState {
@@ -40,17 +38,23 @@ enum TargetReceiver {
   receiver_1, receiver_2
 };
 
+enum CombinePosition {
+  combineLeft, combineStraight, combineRight
+};
+
 enum FlywheelSpeed {
   slow_inwards, stopped, slow_outwards, lvl1_outwards, lvl2_outwards, lvl3_outwards, maximum
 };
 #define QB_TURRET_NUM_SPEEDS 7
 const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7, 1.0};
 
-/*DEBOUNCE & OTHER DELAY CONSTANTS
-  - 50 ms for default delay (50L)
-  - 750 ms to fully extend or retract the linear actuator
-*/
+//================================//
+//  Debounce and Delay Constants  //
+//================================//
+// 50 ms for default delay (50L)
+// 750 ms to fully extend or retract the linear actuator
 #define QB_BASE_DEBOUNCE_DELAY 50L
+#define QB_ASSEMBLY_TILT_DELAY 250L
 #define QB_CRADLE_TRAVEL_DELAY 750L
 #define QB_CIRCLE_HOLD_DELAY 750L
 #define QB_TRIANGLE_HOLD_DELAY 200L
@@ -59,49 +63,59 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 #define QB_TURRET_THRESHOLD 35
 #define QB_TURRET_STICK_SCALE_FACTOR 0.25
 
-/*SPEED CONSTANTS*/
+//================================//
+//        Speed Constants         //
+//================================//
 #define QB_MIN_PWM_VALUE 0.08
 #define QB_HOME_PCT 0.125
 #define QB_HANDOFF  0.3
 #define QB_HOME_MAG 0.1
 
-/*TURRET ANGLE CALCULATION CONSTANTS
-  - QB_COUNTS_PER_ENCODER_REV       Number of ticks per encoder revolution
-  - QB_COUNTS_PER_TURRET_REV        27:1 falcon to turret | 5:1 falcon to encoder (12t driving sprocket on 60t gear) | Encoder spins 5.4 times (27/5) for every turret revolution = 5400 ticks per rev
-  - QB_COUNTS_PER_TURRET_DEGREE     (5400/360) = 15 ticks per degree
-  - QB_TURRET_SLOP_COUNTS           Backlash between input and output on the turret is high -> leads to problems when switching directions = 540 ticks on encoder before turret actually starts to move (Empirically measured)
-*/
+//========================================//
+//   Turret Angle Calculation Constants   //
+//========================================//
+// QB_COUNTS_PER_ENCODER_REV      Number of ticks per encoder revolution
+// QB_COUNTS_PER_TURRET_REV       27:1 falcon to turret | 5:1 falcon to encoder (12t driving sprocket on 60t gear),
+//                                    Encoder spins 5.4 times (27/5) for every turret revolution = 5400 ticks per rev
+//                                    TODO: This will need updated with the new encoder configuration
+// QB_COUNTS_PER_TURRET_DEGREE    (5400/360) = 15 ticks per degree
+// QB_TURRET_SLOP_COUNTS          Backlash between input and output on the turret is high -> leads to problems when switching directions
+//                                    540 ticks on encoder before turret actually starts to move (Empirically measured)
 #define QB_COUNTS_PER_ENCODER_REV 1000
 #define QB_COUNTS_PER_TURRET_REV 5400
 #define QB_COUNTS_PER_TURRET_DEGREE 15
 #define QB_TURRET_SLOP_COUNTS 540
 // #define QB_FALCON_TO_TURRET_RATIO 27 / 1
 // #define QB_ENCODER_TO_FALCON_RATIO 5 / 1
-// #define QB_ENCODER_TO_TURRET_RATIO /* = */ QB_FALCON_TO_TURRET_RATIO / QB_ENCODER_TO_FALCON_RATIO // (27 / 5) = 5.4
-// #define QB_COUNTS_PER_TURRET_REV /* = */ QB_ENCODER_TO_TURRET_RATIO * QB_COUNTS_PER_ENCODER_REV // 5400
+// #define QB_ENCODER_TO_TURRET_RATIO  /* = */ QB_FALCON_TO_TURRET_RATIO / QB_ENCODER_TO_FALCON_RATIO // (27 / 5) = 5.4
+// #define QB_COUNTS_PER_TURRET_REV    /* = */ QB_ENCODER_TO_TURRET_RATIO * QB_COUNTS_PER_ENCODER_REV // 5400
 // #define QB_COUNTS_PER_TURRET_DEGREE /* = */ QB_COUNTS_PER_TURRET_REV / 360
-// #define QB_TURRET_SLOP_GEAR_TEETH /* = */ 10 // slop is about 10 gear teeth
-// #define QB_TURRET_SLOP_PCT        /* = */ QB_DIRECTION_CHANGE_SLOP_GEAR_TEETH / 100
-// #define QB_TURRET_SLOP_COUNTS     /* = */ QB_DIRECTION_CHANGE_SLOP_PCT * QB_COUNTS_PER_TURRET_REV
+// #define QB_TURRET_SLOP_GEAR_TEETH   /* = */ 10 // slop is about 10 gear teeth
+// #define QB_TURRET_SLOP_PCT          /* = */ QB_DIRECTION_CHANGE_SLOP_GEAR_TEETH / 100
+// #define QB_TURRET_SLOP_COUNTS       /* = */ QB_DIRECTION_CHANGE_SLOP_PCT * QB_COUNTS_PER_TURRET_REV
 
-/*TURRET HOMING CONSTANTS
-  -QB_TURRET_STOP_LOOP_DELAY_MS 
-  -QB_TURRET_STOP_THRESHOLD_MS          must be a multiple of QB_TURRET_STOP_LOOP_DELAY_MS
-  -QB_TURRET_HOME_STOP_FACTOR           correction constant for homing, multiplied into stop counts in final homing
-  -QB_TURRET_MANUAL_CONTROL_FACTOR      higher values = less sensitive during manual control (Basically divides the clock of the loop)
-*/
+//===============================//
+//    Turret Homing Constants    //
+//===============================//
+// QB_TURRET_STOP_LOOP_DELAY_MS         
+// QB_TURRET_STOP_THRESHOLD_MS          must be a multiple of QB_TURRET_STOP_LOOP_DELAY_MS
+// QB_TURRET_HOME_STOP_FACTOR           correction constant for homing, multiplied into stop counts in final homing
+// QB_TURRET_MANUAL_CONTROL_FACTOR      higher values = less sensitive during manual control (Basically divides the clock of the loop)
 #define QB_TURRET_STOP_LOOP_DELAY_MS 10
 #define QB_TURRET_STOP_THRESHOLD_MS 500
 #define QB_TURRET_HOME_STOP_FACTOR 0.5
 #define QB_TURRET_MANUAL_CONTROL_FACTOR 4 
 
-/*TURRET PID CONTROLLER CONSTANTS
-  -QB_TURRET_PID_THRESHOLD              Acceptable error in position control (degrees) that will zero the error constants / build up
-  -QB_TURRET_PID_MIN_DELTA_T            If PID error values are not updated fast enough example the controller hangs up for half a second then the PWM values will be massive compared to what they should be so just kind of reset everything
-  -QB_TURRET_PID_MAX_DELTA_T            Maximum time between updates
-  -QB_TURRET_PID_BAD_DELTA_T            Maximum time before we need to zero things out
-  -QB_NORTH_OFFSET                      Added to deal with the problems of zeroing the turret but then holding a set angle afterwards
-*/
+//=====================================//
+//   Turret PID Controller Constants   //
+//=====================================//
+// QB_TURRET_PID_THRESHOLD      Acceptable error in position control (degrees) that will zero the error constants / build up
+// QB_TURRET_PID_MIN_DELTA_T    If PID error values are not updated fast enough, for example if the controller hangs up for half a second,
+//                                  then the PWM values will be massive compared to what they should be so just kind of reset everything
+// QB_TURRET_PID_MAX_DELTA_T    Maximum time between updates
+// QB_TURRET_PID_BAD_DELTA_T    Maximum time before we need to zero things out
+// QB_NORTH_OFFSET              Added to deal with the problems of zeroing the turret but then holding a set angle afterwards
+//                                  TODO: maybe unnecessary now?
 #define QB_TURRET_PID_THRESHOLD 3
 #define QB_TURRET_PID_MIN_DELTA_T 5
 #define QB_TURRET_PID_MAX_DELTA_T 25
@@ -111,290 +125,284 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 // Enable or Disable Auto Mode for testing
 #define QB_AUTO_ENABLED false
 
-/*UART COMMUNICATION PINS
-  -RX2          Used to Recieve data
-  -TX2          Used to Transmit data
-*/
-#define RX2 16
-#define TX2 17
-
-// Accelerometer Constants
-#define ACCEL_DEADZONE 0.15
-#define ACCEL_AVG_SIZE 25
-#define ACCEL_CALIB_AVG_SIZE 100
+//===============================//
+//    UART Communication Pins    //
+//===============================//
+// TODO: move to appropriate area and pass into constructor
+#define RX2 16 // reciever pin
+#define TX2 17 // transmitter pin
 
 /**
  * @brief Quarterback Turret Subclass Header
- * @authors Maxwell Phillips
+ * @authors Maxwell Phillips, George Rak
  */
 class QuarterbackTurret : public Robot {
+
+#pragma region Private
+  //============================//
+  //|                          |//
+  //|          PRIVATE         |//
+  //|                          |//
+  //============================//
   private: 
 
-    /*MOTOR INSTANCES*/
+    //==============================//
+    //    MotorControl Instances    //
+    //==============================//
     MotorControl cradleActuator;
     MotorControl turretMotor;
+    MotorControl assemblyMotor; 
     MotorControl flywheelLeftMotor;
     MotorControl flywheelRightMotor;
     
-    /*PIN DECLARATIONS (PERSISTENT)*/
+    //==============================//
+    //       Pin Declarations       //
+    //==============================//
     static uint8_t turretEncoderPinA;
     static uint8_t turretEncoderPinB;
     uint8_t turretLaserPin;
 
-    /*JOYSTICK INPUTS
-      -stickTurret          used to normalize stick input from [0, 255] to [-1.0, 1.0]
-      -stickFlywheel        same as above
-    */
+    //===============================//
+    //        Joystick Inputs        //
+    //===============================//
+    // stickTurret    used to normalize stick input from [0, 255] to [-1.0, 1.0]
+    // stickFlywheel  same as above  
     float stickTurret;
     float stickFlywheel;
 
-    /*MODES AND CAPSTONE INTEGRATIONS
-      -mode         default manual
-      -target       default receiver_1
-    */
+    //==============================//
+    //     Autonomous Targeting     //
+    //==============================//
+    // mode: manual or autonomous (or combine)
+    // target: reciever1 or reciever2
     TurretMode mode;
     TargetReceiver target;
+    CombinePosition combinePosition;
 
-    /*MSC VARIABLES
-      -enabled              default false, set true when homing / reset complete (toggleable via function)
-      -initialized          default false, set true when homing / reset complete (stays true) -> decides whether or not to just run zero turret or entire setup routine
-      -runningMacro         default false, set true while a macro is running
-    */
+    //==============================//
+    //  Setup and Status Variables  //
+    //==============================//
+    // enabled        default false, set true when homing / reset complete (toggleable via function)
+    // initialized    default false, set true when homing / reset complete (stays true) -> 
+    //                    decides whether or not to just run zero turret or entire setup routine
+    // runningMacro   default false, set true while a macro is running
     bool enabled; 
     bool initialized; 
     bool runningMacro;
 
-    /*FALCON PYLONS
-      -currentAssemblyAngle       initial state is unknown, will reset to straight
-      -targetAssemblyAngle        defaults to straight
-      -assemblyMoving             defaults to false
-    */
+    //===============================//
+    //       Assembly Movement       //
+    //===============================//
+    // currentAssemblyAngle   initial state is unknown, will reset to [straight]. options: [straight, angled]. 
+    // targetAssemblyAngle    defaults to [straight]. options: [straight, angled]. 
+    // assemblyMoving         defaults to false
     AssemblyAngle currentAssemblyAngle;
     AssemblyAngle targetAssemblyAngle;
     bool assemblyMoving;
+    uint32_t assemblyStartTime;
 
-    /*CRADEL
-      -currentCradleState         initial state is unknown, will reset to back
-      -targetCradleState          defaults to back
-      -cradleMoving               defaults to false
-      -cradleStartTime            
-    */
+    //===============================//
+    //  Ball Cradle State Variables  //
+    //===============================//
+    // currentCradleState   initial state is unknown, will reset to [back]. options: [forward, back].
+    // targetCradleState    defaults to [back]. options: [forward, back].
+    // cradleMoving         defaults to [false]
+    // cradleStartTime      
     CradleState currentCradleState;
     CradleState targetCradleState;
     bool cradleMoving;
     uint32_t cradleStartTime;
 
 
-    /*FLYWHEEL
-      -currentFlywheelStage       defaults to stopped
-      -targetFlywheelStage        defaults to stopped
-      -currentFlywheelSpeed       defaults to 0
-      -targetFlywheelsSpeed       defaults to 0
-      -flywheelManualOverride     defaults to false, true when stick is controlling flywheel
-    */
+    //===============================//
+    //        Flywheel State         //
+    //===============================//
+    // currentFlywheelStage       defaults to stopped
+    // targetFlywheelStage        defaults to stopped
+    // currentFlywheelSpeed       defaults to 0
+    // targetFlywheelsSpeed       defaults to 0
+    // flywheelManualOverride     defaults to false, true when stick is controlling flywheel
     FlywheelSpeed currentFlywheelStage;
     FlywheelSpeed targetFlywheelStage;
     float currentFlywheelSpeed;
     float targetFlywheelSpeed;
     bool flywheelManualOverride;
 
-    /*TURRET
-      -currentTurretSpeed         default = 0
-      -targetTurretSpeed          default = 0
-    */
+    //===============================//
+    //         Turret State          //
+    //===============================//
+    // currentTurretSpeed   default = 0
+    // targetTurretSpeed    default = 0
     float currentTurretSpeed;
     float targetTurretSpeed;
 
-    /*ROBOT RELATIVE HEADINGS
-      -currentRelativeHeading           default is undefined
-      -targetrelativeHeading            default = 0
-      -currentRelativeTurretCount       default is undefined
-      -targetTurretEncoderCount         default = 0
-      -errorEncoderCount                the error (current - target)
-      -slopError                        any error due to mechanical backlash in the gears, set by robot during homing / reset
-      -stopError                        number of encoder counts needed for motor to stop moving
-      -turretMoving                     set to true when the turret is moving asynchronously or in the normal program
-      -manualHeadingIncrementCount      default = 0
-    */
-    int16_t currentRelativeHeading;
-    int16_t targetRelativeHeading;
-    int32_t currentRelativeTurretCount;
+    //=====================================//
+    //   Private Encoder State Variables   //
+    //=====================================//
+    // * see also header [[Public Encoder State Variables for ISR]]
+    // targetTurretEncoderCount       default = 0. complementary to [currentTurretEncoderCount]
+    // errorEncoderCount              the error [currentTurretEncoderCount - targetTurretEncoderCount]
+    // slopError                      any error due to mechanical backlash in the gears, set by robot during homing / reset
+    // stopError                      number of encoder counts needed for motor to stop moving
+    // turretMoving                   set to true when the turret is moving asynchronously or in the normal program
+    // manualHeadingIncrementCount    default = 0
     int32_t targetTurretEncoderCount;
     int32_t errorEncoderCount;
-    int32_t slopError;
-    int32_t stopError;
+    int32_t slopError;                // TODO: remove with new encoder
+    int32_t stopError;                // TODO: remove with new encoder (?)
     bool turretMoving;
     uint8_t manualHeadingIncrementCount;
 
-    /*WORLD RELATIVE HEADINGS
-      -currentAbsoluteHeading       default = 0
-      -targetAbsoluteHeading        default = 0
-      -turretLaserState             triggered or not
-    */
-    int16_t currentAbsoluteHeading;
-    int16_t targetAbsoluteHeading;
-    uint8_t turretLaserState;
+    //===============================//
+    //    Robot Relative Headings    //
+    //===============================//     
+    int16_t currentRelativeHeading;       // default is undefined
+    int16_t targetRelativeHeading;        // default = 0
+    int32_t currentRelativeTurretCount;   // default is undefined
+    
+    //========================================//
+    //   Absolute (World Relative) Headings   //
+    //========================================//
+    // currentAbsoluteHeading         
+    // targetAbsoluteHeading          
+    // turretLaserState               
+    int16_t currentAbsoluteHeading;   // default = 0
+                                      // TODO: is unused, merge with headingRad/headingDeg
+    int16_t targetAbsoluteHeading;    // default = 0
+    uint8_t turretLaserState;         // triggered or not 
+                                      // TODO: seems to be unused, remove?
 
-    /*DEBOUNCERS*/
+    //================================//
+    //    Control Input Debouncers    //
+    //================================//
+    Debouncer* dbShare;
     Debouncer* dbOptions;
     Debouncer* dbSquare;
     Debouncer* dbDpadUp;
     Debouncer* dbDpadDown;
+    Debouncer* dbDpadLeft;
+    Debouncer* dbDpadRight;
 
-    //for delay
+    //===============================//
+    //    Macro Button Debouncers    //
+    //===============================//
+    //* used to set a delay that a button must be held in order to trigger a macro
     Debouncer* dbCircle;
     Debouncer* dbTriangle;
     Debouncer* dbCross;
-    Debouncer* dbTurretInterpolator;
+    Debouncer* dbTurretInterpolator; // TODO: seems to be unused, remove?
 
-    /******* MAGNETOMETER ******/
-    Adafruit_LIS3MDL lis3mdl;
-    bool useMagnetometer = true;  //Change this if you want to use the magnetometer or any of it's functions
-    bool holdTurretStillEnabled = true; //Change this if you only want to use the magnetometer for the handoff and not the hold steady
+#pragma region Magnetometer
+    //==========================//
+    //|                        |//
+    //|      Magnetometer      |//
+    //|                        |//
+    //==========================//
+    Adafruit_LIS3MDL lis3mdl;           // magnetometer object
+    bool useMagnetometer = true;        // set 'false' to disable the magnetometer and its functions
+    bool holdTurretStillEnabled = true; // set 'false' if you only want to use the magnetometer for the handoff and not the hold steady
 
-    /******* ACCELEROMETER *******/
-    ADXL335 accelerometer;
-    float ax,ay,az;
-
-    /* Calibration Variables 
-        - calibrationXSum, calibrationYSum:       Adds up over multiple loops to get an average for when robot is sitting still
-        - calibrationXValue, calibrationYValue:   The average value used to get acceleration values during main loop
-    */
-    float calibrationXValue = 0;
-    float calibrationYValue = 0;
-    float calibrationXSum = 0;
-    float calibrationYSum = 0;
-
-    /* Accelerometer Calculation Variables
-        - movingAverageX, movingAverageY:                     Used to smooth out bumps in data while keeping accuracy
-        - movingAverageXIndex, movingAverageYIndex:           The arrays act like queues so keeping track of what element we are on
-        - calcAverage:                                        currentValue of the average
-        - prevmovingAverageX, prevmovingAverageY:             Keeping track of the previous average values for use when deciding when to reset (used to remove error build up)
-        - prevmovingAverageXIndex, prevmovingAverageYIndex:   The arrays act like queues so keeping track of what element we are on
-        - prevMovingAvgMax, prevMovingAvgMin:                 Min and max values used to calculate the range found in the previous values (used to remove error build up)
-        - maxXAccel, minXAccel, maxYAccel, minYAccel:         Used to find the range in values as the program runs
-        - 
-    */
-    float movingAverageX[10];
-    float movingAverageY[10];
-    int movingAverageXIndex = 0;
-    int movingAverageYIndex = 0;
-    float calcAverage = 0.0;
-    float prevmovingAverageX[10];
-    float prevmovingAverageY[10];
-    int prevmovingAverageXIndex = 0;
-    int prevmovingAverageYIndex = 0;
-    float prevMovingAvgMax = -100000;
-    float prevMovingAvgMin = 100000;
-    float maxXAccel = -1000000.0;
-    float minXAccel = 1000000.0;
-    float maxYAccel = -1000000.0;
-    float minYAccel = 1000000.0;
-
-    /* Final Accelerometer Values
-        - currentAccelX, currentAccelY:         The current acceleration values in each Axis
-        - accelXRunningSum, accelYRunningSum:   The current running sum in each axis, used to slow down QB turret
-    */
-    float currentAccelX;
-    float currentAccelY = 0;
-    float accelXRunningSum;
-    float accelYRunningSum = 0;
-
-    // put function declarations here:
-    void accelerometerSetup();
-    void calculateAcceleration();
-
-
-    /* Magnetometer calibration variables used at startup each time
-        - yVal, xVal:     The current x and y values read by the magnetometer (after adjustments)
-        - maxX, minX:     During calibration the max and min X values are recorded
-        - maxY, minY:     During calibration the max and min Y values are recorded
-        - xHalf, yHalf:   Half of the total range of expected x and Y values (Usesd to shift values back to origin [0,0])
-        - xsign, ysign:   Determines whether to add to the half value or subtract from it when shifting values back to origin (true = subtract)
-    */
-    int yVal = 0;
-    int xVal = 0;
-    int maxX = -1000000;
-    int minX = 1000000;
-    int xHalf = 0;
-    int maxY = -1000000;
-    int minY = 1000000;
-    int yHalf = 0;
-    bool xsign = false;
-    bool ysign = false;
+    //============================//
+    //  Magnetometer Calibration  //
+    //============================//
+    //* used at each startup
+    // TODO: make a class or struct for all these
+    // mag_xVal, mag_yVal:     The current x and y values read by the magnetometer (after adjustments)
+    // mag_xMax, mag_xMin:     During calibration the max and min X values are recorded
+    // mag_yMax, mag_yMin:     During calibration the max and min Y values are recorded
+    // mag_xHalf, mag_yHalf:   Half of the total range of expected x and Y values (Used to shift values back to origin [0,0])
+    // mag_xSign, mag_ySign:   Determines whether to add to the half value or subtract from it when shifting values back to origin (true = subtract)
+    int mag_yVal = 0;
+    int mag_xVal = 0;
+    int mag_xMax = -1000000;
+    int mag_xMin = 1000000;
+    int mag_xHalf = 0;
+    int mag_yMax = -1000000;
+    int mag_yMin = 1000000;
+    int mag_yHalf = 0;
+    bool mag_xSign = false;
+    bool mag_ySign = false;
     int northHeadingDegrees = 0;
 
-    /* Magnetometer current heading calculations
-        - headingrad:     The current calculated heading in radians using the X and Y values after calibration
-        - headingdeg:     The current calculated headign in degrees -> uses headingrad
-    */
-    float headingrad;
-    float headingdeg;
 
-    /* Magnetometer PID calculations
-        - previousTime:         Used to calcualte errors and deltaT in PID function
-        - ePrevious:            The error builds as time goes on, this is used to record the previous and new error values
-        - eIntegral:            The current error integral calculated, will be added to ePrevious in PID loop
-        - kp:                   Proportional gain used in PID
-        - ki:                   Integral gain used in PID
-        - kd:                   Derivative gain used in PID
-        - turretPIDSpeed:       The calculated PWM value used in the PID loop
-        - prevErrorVals:        Array of previous error values used to average the last few together to smooth out random spikes in readings from magnetometer
-        - prevErrorIndex:       The current index gets replaced with the new error value cycling through the entire array over time
-        - errorAverageLength:   The length of the array used for averaging the error
-        - firstAverage:         On the first error calculations the array is filled with zeros so this accounts for that by filling the entire array with the current reading
-        - minMagSpeed:          Small PWM signals fail to make the motor turn leading to error in PID calculations, this sets a bottom bound on the PWM signal that can be calculated by the PID loop
+    /* Magnetometer current heading calculations
+        - headingRad:     The current calculated heading in radians using the X and Y values after calibration
+        - headingDeg:     The current calculated heading in degrees -> uses headingRad
     */
+    float headingRad; // TODO: merge with robot abs pot vars
+    float headingDeg; // TODO: merge with robot abs pot vars
+
+    //==================================//
+    //    Magnetometer PID Variables    //
+    //==================================//
+    // MAG_ERROR_AVG_ARRAY_LENGTH       The length of the array used for averaging the error
+
+    // prevErrorVals        Array of previous error values used to average the last few error values together
+    //                          to smooth out random spikes in readings from magnetometer
+    // prevErrorIndex       The current index gets replaced with the new error value cycling through the entire array over time
+    // firstAverage         On the first error calculations, the array is filled with zeros. 
+    //                          This accounts for that by filling the entire array with the current reading.
+
+    // previousTime:        Used to calculate errors and deltaT in PID function
+    // ePrevious:           The error builds as time goes on, this is used to record the previous and new error values
+    // eIntegral:           The current error integral calculated, will be added to ePrevious in PID loop
+    // kp:                  Proportional gain used in PID
+    // ki:                  Integral gain used in PID
+    // kd:                  Derivative gain used in PID
+    // turretPIDSpeed:      The calculated PWM value used in the PID loop
+    // minMagSpeed:         Small PWM signals fail to make the motor turn leading to error in PID calculations. 
+    //                        This sets a bottom bound on the PWM signal that can be calculated by the PID loop
+    #define MAG_ERROR_AVG_ARRAY_LENGTH 5
+    // TODO: convert to appropriate (u)int#_t types
+    int prevErrorVals[MAG_ERROR_AVG_ARRAY_LENGTH] = { 0, 0, 0, 0, 0 };
+    int prevErrorIndex = 0;
+    bool firstAverage = true;
     long previousTime = 0;
     float ePrevious = 0;
     float eIntegral = 0;
-    float kp = .005;
+    float kp = 0.005;
     float ki = 0.0012;
     float kd = 0.0;
     float turretPIDSpeed = 0;
-    int prevErrorVals[5] = {0,0,0,0,0};
-    int prevErrorIndex = 0;
-    int errorAverageLength = 5;
-    bool firstAverage = true;
     float minMagSpeed = .075;
 
-    /* Magnetometer functions:
-        - magnetometerSetup       Sets some of the parameters runs once
-        - calibMagnetometer       Rotates turret once on startup recording readings and setting values that will move and scale outputs to be correct angle
-        - calculateHeadingMag     Uses the values calculated during calibration to find the current heading of the turret with respect to the original 0 position
-        - holdTurretStill         Checks if the calibration has been completed and hold turret stil is enabled then enables the PID loop
-        - turretPIDController     PID loop that drives turret to the current setpoint
-    */
+    //============================//
+    //   Magnetometer Functions   //
+    //============================//
+    // magnetometerSetup      Sets some of the parameters. Runs once on startup.
+    // calibMagnetometer      Rotates turret once on startup, records readings and sets values that will scale/transform 
+    //                            outputs to the correct angles
+    // calculateHeadingMag    Uses the values calculated during calibration to find the current heading of the turret 
+    //                            with respect to the original 0 position
+    // holdTurretStill        Checks if the calibration has been completed and hold turret stil is enabled then enables the PID loop
     void magnetometerSetup();
     void calibMagnetometer();
     void calculateHeadingMag();
     void holdTurretStill();
     float turretPIDController(int setPoint, float kp, float kd, float ki, float maxSpeed);
 
-    /* MAGNETOMETER CURRENT STATE NOTES / PLAN
+    /* MAGNETOMETER CURRENT STATE NOTES / PLAN (from April 9th, 2024 7:56 PM)
       - the PID controller works pretty well, tested on table rotating quickly
       - Tested PID controller on field and it immidiately flipped so we need to tune it so that the robot does not tip itself over
-      - Magnetometer mount needs redesigned and printed to be more stable / protective of the magnetometer and wires (Should probably solder wires to magnetometer for best reliability)
+      - Magnetometer mount needs redesigned and printed to be more stable / protective of the magnetometer and wires 
+          (Should probably solder wires to magnetometer for best reliability)
       - Ability to change holding angle of turret with joystick needs evaluated for correctness
       - Turret flywheel equation needs generated for requested distance
-      - Nathan capstone integration needs done to control angle and thorw distance
+      - Scan and Score capstone integration needs done to control angle and throw distance
       - Testing needs done to see how much flywheels beign on affects magnetometer
       - Relative velocities should be taken into account with trajectory calculations
     */
+#pragma endregion
 
-    /*UART VARIABLES*/
+    //====================================//
+    //     Private UART Communication     //
+    //====================================//
     String recievedMessage = "";
 
-
-    /*MSC PRIVATE FUNCTION DECLARATIONS
-      -moveCradleSubroutine       Avoids code duplication on ball fondler
-      -moveTurret                 Moves turret / turntable to specific heading (relative to robot not the field)
-      -updateTurretMotionStatus   Allows for asynchronous turret movements (Stops when turret reaches target position)
-      -getCurrentHeading          Calculates current heading from the current encoder count
-      -findNearestHeading         Finds the smallest absolute value difference from either the current or provided angle (overloaded function) [Ex: findNearestHeading(270, 0) returns -90]
-      -NormalizeAngle             Used in angle calculations to take the angle back to 0-360 value (can't use modulus on negative numbers without adverse effects)
-      -CalculateRotation          helperfunction for findNearestHeading
-    */
+    //=============================//
+    //   Misc. Private Functions   //
+    //=============================//
+    void moveAssemblySubroutine();
     void moveCradleSubroutine();
     void moveTurret(int16_t heading, TurretUnits units, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = false); 
     void updateTurretMotionStatus();
@@ -403,8 +411,18 @@ class QuarterbackTurret : public Robot {
     int16_t findNearestHeading(int16_t targetHeading);
     int NormalizeAngle(int angle);
     int CalculateRotation(float currentAngle, float targetAngle);
+#pragma endregion
 
+#pragma region Public
+  //===========================//
+  //|                         |//
+  //|          PUBLIC         |//
+  //|                         |//
+  //===========================//
   public:
+    //========================//
+    //      Constructor       //
+    //========================//
     QuarterbackTurret(
       uint8_t flywheelLeftPin,    // M1
       uint8_t flywheelRightPin,   // M2
@@ -421,82 +439,98 @@ class QuarterbackTurret : public Robot {
 
     bool magnetometerCalibrated = false;
 
-    /*PUBLIC MSC AND SETUP FUNCTION DECLARATIONS
-      -action                         robot sublass must override action
-      -zeroTurret                     Runs through the routine to zero the turret
-      -reset                          zero turret, aim down (straight), and set flywheels to slow intake
-      -setEnabled                     toggles turret and flywheel movement
-      -emergencyStop                  If the E-Stop button on controller is pressed this should override every other motor function and force them to stop
-      -testForDisableOrStop           Tests what state the motors should be in
-      -printDebug                     Consolidating printouts for the different functions into one locations for debugging purposes
-    */
+    //===================================//
+    //   Quarterback General Functions   //
+    //===================================//
+    // action                   robot sublass must override action    
     void action() override;
+
+    // [Startup]
+    // zeroTurret               Runs through the routine to zero the turret
+    // reset                    zero turret, aim down (straight), and set flywheels to slow intake
     void zeroTurret();
     void reset();
+
+    // [Safety]
+    // setEnabled               toggles turret and flywheel movement
+    // emergencyStop            If the E-Stop button on controller is pressed this should override every other motor function and force them to stop
+    // testForDisableOrStop     Used for safety, returns false if the robot is disabled or should be stopped
     void setEnabled(bool enabled);
     void emergencyStop();
     bool testForDisableOrStop();
-    void printDebug();
 
-   /*QB DIRECT CONTROL FUNCTION DELCARATIONS
-      -setTurretSpeed                 Moves the turret at a specified speed (open loop)
-      -moveTurret                     Turn the turret to a specific heading (currently relative to robot) -> asynchronous
-      -moveTurretAndWait              Moves the turret and waits until the heading is reached -> synchronous
-      -aimAssembly                    Moves the falcon pylon assembly up and down between two states
-      -moveCradle                     Moves teh cradel between two states throw and hold
-      -setFlywheelSpeed               Sets the speed of the flywheels using stick inputs
-      -setFlywheelSpeedStage          Set the speed as one of the defined enums
-      -adjustFlywheelSpeedStage       Move to the next level up or down in the list of speeds
-   */
+    // [Debug]
+    // printDebug               Consolidating printouts for the different functions into one locations for debugging purposes
+    // testRoutine              Used for debugging
+    void printDebug();
+    void testRoutine();
+
+
+    //====================================//
+    //   Quarterback Subsystem Controls   //
+    //====================================//
+    // setTurretSpeed                 Moves the turret at a specified speed (open loop)
+    // moveTurret                     Turn the turret to a specific heading (currently relative to robot) -> asynchronous
+    // moveTurretAndWait              Moves the turret and waits until the heading is reached -> synchronous
+    // aimAssembly                    Moves the falcon pylon assembly up and down between two states
+    // moveCradle                     Moves the cradle between two states throw and hold
+    // setFlywheelSpeed               Sets the speed of the flywheels using stick inputs
+    // setFlywheelSpeedStage          Set the speed as one of the defined enums
+    // adjustFlywheelSpeedStage       Move to the next level up or down in the list of speeds
     void setTurretSpeed(float absoluteSpeed, bool overrideEncoderTare = false); 
     void moveTurret(int16_t heading, bool relativeToRobot = true, bool ramp = true); 
     void moveTurret(int16_t heading, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = true);
     void moveTurretAndWait(int16_t heading, float power = QB_HOME_PCT, bool relativeToRobot = true, bool ramp = true);
-    void aimAssembly(AssemblyAngle angle); 
+    void aimAssembly(AssemblyAngle angle, bool force = false); 
     void moveCradle(CradleState state, bool force = false); 
     void setFlywheelSpeed(float absoluteSpeed); 
     void setFlywheelSpeedStage(FlywheelSpeed stage); 
     void adjustFlywheelSpeedStage(SpeedStatus speed);
 
-    /*QB AUTOMATIC TARGETING
-      -switchMode                 Used to switch between manual and automatic mode (overloaded function)
-      -switchTarget               Switch between reciever1 or reciever2
-
-    */
+    //===================================//
+    //  Quarterback Automatic Targeting  //
+    //===================================//
+    // switchMode                 Used to switch between manual and automatic mode (overloaded function)
+    // switchTarget               Switch between receiver1 or receiver2
     void switchMode(TurretMode mode); 
     void switchMode(); 
     void switchTarget(TargetReceiver target); 
 
-    /*QB MACROS
-      -loadFromCenter             Prepared the QB to accept the ball from the center
-      -handoff                    Hands the ball to the runningback
-      -testRoutine                used for testing different functions
-    */
+    //==================================//
+    //   Quarterback Strategic Macros   //
+    //==================================//
+    // loadFromCenter             Prepares the QB to accept the ball from the center
+    // handoff                    Hands the ball to the runningback
     void loadFromCenter();
     void handoff();
-    void testRoutine();
+    
+    
+    //==========================================//
+    //  Public Encoder State Variables for ISR  //
+    //==========================================//
+    // * see also header [[Private Encoder State Variables]]
+    // * any variables used in the turretEncoderISR() (interrupt service routine) must be public static
+    static int32_t currentTurretEncoderCount;   // updated by encoder ISR (interrupt service routine). complementary to [targetTurretEncoderCount].
+    static uint8_t turretEncoderStateB;         // A channel will always be 1 when interrupt triggers, so only care about channel B
 
-   
+    //===============================================//
+    //    Encoder Interrupt Service Routine (ISR)    //
+    //===============================================//
+    // must be static. simple function called when encoder interrupts are triggered. updates [currentTurretEncoderCount].
+    static void turretEncoderISR(); 
 
-    /*ENCODER VARIABLES
-      -currentTurretEncoderCount
-      -turretEncoderStateB                  The A channel will be 1 when the interrupt triggers
-    */
-    static int32_t currentTurretEncoderCount;
-    static uint8_t turretEncoderStateB;
+    // If the direction changes then some things need to happen differently because of the incredible amount of backlash
+    // TODO: remove? may not be needed with new encoder system
+    void turretDirectionChanged(); 
 
-    /*ENCODER FUNCTIONS
-      -turretEncoderISR
-      -turretDirectionChanged               IF the direction changes then some things need to happen differently because of the incredible amount of backlash
-    */
-    static void turretEncoderISR();
-    void turretDirectionChanged();
-
-    /* UART Communication Variables and Functions
-    */
+    //===================================//
+    //     Public UART Communication     //
+    //===================================//
     int motor1Value = 0;
     int motor2Value = 0;
     void updateReadMotorValues();
-};
+
+#pragma endregion
+};  
 
 #endif // QUARTERBACK_TURRET_H

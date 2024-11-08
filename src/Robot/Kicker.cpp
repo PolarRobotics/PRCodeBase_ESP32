@@ -61,12 +61,16 @@ void Kicker::kickerEncoderISR() {
  */
 void Kicker::action() {
   // Control the motor on the kicker manually
-  if (ps5.Triangle())
-    turnForward();
-  else if (ps5.Cross())
-    turnReverse();
-  else
-    stop();
+  if (enabled) {
+    if (ps5.Circle())
+      homeKickingArm();
+    else if (ps5.Triangle())
+      turnForward();
+    else if (ps5.Cross())
+      turnReverse();
+    else
+      stop();
+  }
 }
 
 /**
