@@ -6,11 +6,14 @@
 #include <MotorInterface.h>
 #include <Robot/Robot.h>
 #include <ps5Controller.h> // ESP PS5 library, access using global instance `ps5`
+#include <Utilities/Debouncer.h>
 
 // Encoder Information
 #define KICKER_COUNTS_PER_ENCODER_REV 11  // Number of encoder counts per revolution of base shaft
 #define KICKER_COUNTS_PER_ARM_REV 1188    // Number of encoder counts per revolution of output shaft (11 * 108 = 1188)
 #define KICKER_COUNTS_PER_ARM_DEGREE 3.3  // Number of encoder counts per degree of the arm (1188 / 360 = 3.3)
+
+#define KICKER_ENABLE_DB_DELAY 100L
 
 /**
  * @brief Kicker Class
@@ -31,7 +34,9 @@ private:
   static uint8_t kickerEncoderPinB; // Signal Pin for channel B of the encoder
   static uint8_t kickerEncoderStateB; // Keeps track of the current state of channel B
   static int32_t currentKickerEncoderCount; // Encoder count of kicker arm motor encoder
-  MotorInterface windupMotor; // MotorInterface instantation for the kicker arm motor
+  MotorControl windupMotor; // MotorControl instantation for the kicker arm motor
+
+  Debouncer* dbEnable;
 
 public:
   Kicker(

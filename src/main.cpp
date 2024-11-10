@@ -143,11 +143,6 @@ void setup() {
 
   // Once paired, set lights to appropriate status
   lights.setLEDStatus(Lights::PAIRED);
-  
-  // Kicker safety enable once paired
-  if (robotType == kicker) {
-    ((Kicker*) robot)->enable();
-  }
 
   ps5.attachOnConnect(onConnection);
   ps5.attachOnDisconnect(onDisconnect);
