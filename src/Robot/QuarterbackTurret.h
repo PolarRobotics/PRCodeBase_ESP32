@@ -75,16 +75,14 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 //   Turret Angle Calculation Constants   //
 //========================================//
 // QB_COUNTS_PER_ENCODER_REV      Number of ticks per encoder revolution
-// QB_COUNTS_PER_TURRET_REV       27:1 falcon to turret | 5:1 falcon to encoder (12t driving sprocket on 60t gear),
-//                                    Encoder spins 5.4 times (27/5) for every turret revolution = 5400 ticks per rev
-//                                    TODO: This will need updated with the new encoder configuration
-// QB_COUNTS_PER_TURRET_DEGREE    (5400/360) = 15 ticks per degree
+// QB_COUNTS_PER_TURRET_REV       Encoder Gear: 15t; Turret Track: 153t. Encoder spins 8.5 times for every turret revolution = 8500 ticks/rev
+// QB_COUNTS_PER_TURRET_DEGREE    (8500/360) = 23.61... ticks per degree
 // QB_TURRET_SLOP_COUNTS          Backlash between input and output on the turret is high -> leads to problems when switching directions
 //                                    540 ticks on encoder before turret actually starts to move (Empirically measured)
 #define QB_COUNTS_PER_ENCODER_REV 1000
-#define QB_COUNTS_PER_TURRET_REV 5400
-#define QB_COUNTS_PER_TURRET_DEGREE 15
-#define QB_TURRET_SLOP_COUNTS 540
+#define QB_COUNTS_PER_TURRET_REV 8500
+#define QB_COUNTS_PER_TURRET_DEGREE 23.61
+#define QB_TURRET_SLOP_COUNTS 540 // deprecated
 // #define QB_FALCON_TO_TURRET_RATIO 27 / 1
 // #define QB_ENCODER_TO_FALCON_RATIO 5 / 1
 // #define QB_ENCODER_TO_TURRET_RATIO  /* = */ QB_FALCON_TO_TURRET_RATIO / QB_ENCODER_TO_FALCON_RATIO // (27 / 5) = 5.4

@@ -293,9 +293,9 @@ void QuarterbackTurret::setTurretSpeed(float absoluteSpeed, bool overrideEncoder
     turretMotor.write(-targetTurretSpeed); // flip direction so that + is CW and - is CCW
 
     // handle mechanical slop when changing directions
-    if (!overrideEncoderTare) {
-      turretDirectionChanged();
-    }
+    // if (!overrideEncoderTare) {
+    //   turretDirectionChanged();
+    // }
 
     currentTurretSpeed = targetTurretSpeed; //! for now, will probably need to change later, like an interrupt
   } else {
@@ -331,7 +331,7 @@ void QuarterbackTurret::moveTurret(int16_t heading, TurretUnits units, float pow
         // currentTurretEncoderCount %= 360;
         // currentTurretEncoderCount *= sign;
 
-        targetTurretEncoderCount = heading * QB_COUNTS_PER_TURRET_DEGREE;
+        targetTurretEncoderCount = (int) round((double) heading * QB_COUNTS_PER_TURRET_DEGREE);
         turretMoving = true;
         // sign now used for target instead of current
         sign = 1; // 1 when positive, -1 when negative 
@@ -398,15 +398,15 @@ void QuarterbackTurret::turretDirectionChanged() {
 }
 
 int16_t QuarterbackTurret::getCurrentHeading() {
-  return (currentTurretEncoderCount / QB_COUNTS_PER_TURRET_DEGREE) % 360;
+  return (int)((double) currentTurretEncoderCount / QB_COUNTS_PER_TURRET_DEGREE) % 360;
 }
 
 // Function to normalize an angle to the range [0, 360)
 int QuarterbackTurret::NormalizeAngle(int angle) {
     while (angle < 0) {
-      angle+=360;
+      angle += 360;
     }
-    angle%= 360; // Ensure angle is within [0, 360) range
+    angle %= 360; // Ensure angle is within [0, 360) range
     return angle;
 }
 
@@ -432,7 +432,7 @@ int QuarterbackTurret::CalculateRotation(float currentAngle, float targetAngle) 
     else if (NormalizeAngle(negativeDegreeCount) == targetAngle) {
       return iter;
     } else {
-      return iter*-1;
+      return iter * -1;
     }
 }
 
@@ -653,8 +653,8 @@ void QuarterbackTurret::handoff() {
   aimAssembly(straight);
   int16_t targetHeading = (getCurrentHeading() + 130) % 360;
   calculateHeadingMag();
-  targetAbsoluteHeading = headingDeg +180;
-  targetAbsoluteHeading%=360;
+  targetAbsoluteHeading = headingDeg + 180;
+  targetAbsoluteHeading %= 360;
 
   if (useMagnetometer) {
     //moveTurretAndWait(targetHeading);
@@ -1063,7 +1063,7 @@ void QuarterbackTurret::calibMagnetometer() {
     northHeadingDegrees = 0;
   
     int degreesMove = 360;
-    targetTurretEncoderCount = degreesMove * QB_COUNTS_PER_TURRET_DEGREE;
+    targetTurretEncoderCount = (int) round((double) degreesMove * QB_COUNTS_PER_TURRET_DEGREE);
     turretMoving = true;
     setTurretSpeed(QB_HOME_MAG * copysign(1, degreesMove), true);
     //Loop until the target encoder count has been achieved
