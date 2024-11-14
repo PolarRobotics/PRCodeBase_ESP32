@@ -91,7 +91,7 @@ void Kicker::enable() {
 /**
  * @brief Turns motor forward
  * 
- * Turns the motor forward by writing the windupMotor SPECBOT_1 (D18) pin to -0.5
+ * Turns the motor forward by writing the windupMotor SPECBOT_1 (D18) pin to -1
  */
 void Kicker::turnForward() {
   if (enabled) {
@@ -102,7 +102,7 @@ void Kicker::turnForward() {
 /**
  * @brief Turns motor reverse
  * 
- * Turns the motor backwards by writing the windupMotor SPECBOT_1 (D18) pin to 0.5
+ * Turns the motor backwards by writing the windupMotor SPECBOT_1 (D18) pin to 1
  */
 void Kicker::turnReverse() {
   if (enabled) {
