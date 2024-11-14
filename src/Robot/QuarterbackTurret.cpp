@@ -13,9 +13,9 @@ void QuarterbackTurret::turretEncoderISR() {
   turretEncoderStateB = digitalRead(turretEncoderPinB);
 
   if (turretEncoderStateB == 1) {
-    currentTurretEncoderCount++;
-  } else if (turretEncoderStateB == 0) {
     currentTurretEncoderCount--;
+  } else if (turretEncoderStateB == 0) {
+    currentTurretEncoderCount++;
   }
 }
 
@@ -877,7 +877,7 @@ void QuarterbackTurret::zeroTurret() {
   Serial.println(targetCount);
 
   // finally, move to the target count, then stop
-  setTurretSpeed(QB_HOME_PCT);
+  // setTurretSpeed(QB_HOME_PCT);
 
 
   while (
