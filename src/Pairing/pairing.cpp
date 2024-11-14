@@ -205,32 +205,33 @@ void activatePairing(bool doRePair, int discoverTime = DEFAULT_BT_DISCOVER_TIME,
           Serial.print(F(" | "));
           Serial.println(device->getRSSI());
 
-        // print out relevant controller details
-        // reminder that we need to use flash strings whenever possible, so don't try to collapse this
-        Serial.print(i);
-        Serial.print(F(" | "));
-        Serial.print(addr.toString().c_str());
-        Serial.print(F(" | "));
-        Serial.print(device->getName().c_str());
-        Serial.print(F(" | "));
-        Serial.println(device->getRSSI());
+          // print out relevant controller details
+          // reminder that we need to use flash strings whenever possible, so don't try to collapse this
+          Serial.print(i);
+          Serial.print(F(" | "));
+          Serial.print(addr.toString().c_str());
+          Serial.print(F(" | "));
+          Serial.print(device->getName().c_str());
+          Serial.print(F(" | "));
+          Serial.println(device->getRSSI());
 
-        if (addressIsController(addrCharPtr) || (strcmp(device->getName().c_str(), "Wireless Controller") == 0)) {
-          Serial.print(F("Connecting to PS5 Controller @ "));
-          Serial.println(addrCharPtr);
-          ps5.begin(addrCharPtr);
-          while (!ps5.isConnected()) {
-            toggleBuiltInLED(); // fast blinking when hooked into a device but not yet connected
-            delay(LOOP_DELAY);
-            Lights::getInstance().updateLEDS();
+          if (addressIsController(addrCharPtr) || (strcmp(device->getName().c_str(), "Wireless Controller") == 0)) {
+            Serial.print(F("Connecting to PS5 Controller @ "));
+            Serial.println(addrCharPtr);
+            ps5.begin(addrCharPtr);
+            while (!ps5.isConnected()) {
+              toggleBuiltInLED(); // fast blinking when hooked into a device but not yet connected
+              delay(LOOP_DELAY);
+              Lights::getInstance().updateLEDS();
+            }
+          }
+
+          // if not connected at this point, no valid controllers have been found
+          if (!ps5.isConnected()) { 
+            Serial.println(F("Found no pairable devices."));
+            setBuiltInLED(false);
           }
         }
-
-        // if not connected at this point, no valid controllers have been found
-        if (!ps5.isConnected()) setBuiltInLED(false); // turn the led off
-      } else {
-        Serial.println(F("Found no pairable devices."));
-        setBuiltInLED(false);
       }
     } else {
       Serial.println(F("Asynchronous discovery failed."));
@@ -265,3 +266,4 @@ void activatePairing(bool doRePair, int discoverTime = DEFAULT_BT_DISCOVER_TIME,
       } 
     }
   }
+}
