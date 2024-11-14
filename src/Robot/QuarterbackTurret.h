@@ -101,7 +101,7 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 // QB_TURRET_MANUAL_CONTROL_FACTOR      higher values = less sensitive during manual control (Basically divides the clock of the loop)
 #define QB_TURRET_STOP_LOOP_DELAY_MS 10
 #define QB_TURRET_STOP_THRESHOLD_MS 500
-#define QB_TURRET_HOME_STOP_FACTOR 0.5
+#define QB_TURRET_HOME_STOP_FACTOR 0 // 0.5
 #define QB_TURRET_MANUAL_CONTROL_FACTOR 4 
 
 //=====================================//
@@ -297,7 +297,7 @@ class QuarterbackTurret : public Robot {
     //|                        |//
     //==========================//
     Adafruit_LIS3MDL lis3mdl;           // magnetometer object
-    bool useMagnetometer = true;        // set 'false' to disable the magnetometer and its functions
+    bool useMagnetometer = false;        // set 'false' to disable the magnetometer and its functions
     bool holdTurretStillEnabled = true; // set 'false' if you only want to use the magnetometer for the handoff and not the hold steady
 
     //============================//

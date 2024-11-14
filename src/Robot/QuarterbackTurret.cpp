@@ -142,9 +142,9 @@ void QuarterbackTurret::action() {
     else if (dbCross->debounceAndPressed(ps5.Cross())) {
       handoff();
     } 
-    else if (ps5.Left()) {
-      testRoutine();
-    }
+    // else if (ps5.Left()) {
+    //   testRoutine();
+    // }
     //* Manual and Automatic Controls
     else {
       //* Right Trigger (R2): Fire (cradle/grabber forward)
@@ -196,6 +196,9 @@ void QuarterbackTurret::action() {
       else {
         stickFlywheel = (ps5.LStickY() / 127.5f);
         stickTurret = (ps5.RStickX() / 127.5f);  
+        
+        Serial.print(F("stickTurret: "));
+        Serial.println(stickTurret);
 
         if (mode == combine) {
           //* Combine "Macro" Mode
@@ -312,7 +315,7 @@ void QuarterbackTurret::moveTurret(int16_t heading, float power, bool relativeTo
 }
 
 void QuarterbackTurret::moveTurret(int16_t heading, TurretUnits units, float power, bool relativeToRobot, bool ramp) {
-  Serial.print(F("moveTurret called with heading ="));
+  Serial.print(F("moveTurret called with heading = "));
   Serial.print(heading);
   Serial.print(F(", units = "));
   if (units == degrees) { Serial.print(F("degrees, rel = ")); } else {Serial.print(F("counts, rel = ")); }
@@ -376,10 +379,10 @@ void QuarterbackTurret::moveTurretAndWait(int16_t heading, float power, bool rel
 }
 
 void QuarterbackTurret::updateTurretMotionStatus() {
-  // Serial.print(F("update called with ctec = "));
-  // Serial.print(currentTurretEncoderCount);
-  // Serial.print(F("; ttec = "));
-  // Serial.println(targetTurretEncoderCount);
+  Serial.print(F("update called with ctec = "));
+  Serial.print(currentTurretEncoderCount);
+  Serial.print(F("; ttec = "));
+  Serial.println(targetTurretEncoderCount);
   // determines if encoder is within "spec"
   if (turretMoving && fabs((currentTurretEncoderCount % QB_COUNTS_PER_TURRET_REV) - targetTurretEncoderCount) < QB_TURRET_THRESHOLD) {
     turretMoving = false;
@@ -874,7 +877,7 @@ void QuarterbackTurret::zeroTurret() {
   Serial.println(targetCount);
 
   // finally, move to the target count, then stop
-  // setTurretSpeed(QB_HOME_PCT);
+  setTurretSpeed(QB_HOME_PCT);
 
 
   while (
@@ -1115,7 +1118,7 @@ void QuarterbackTurret::calibMagnetometer() {
     Serial.print(F("Magnetometer reading after calib: "));
     Serial.print(headingDeg);
     Serial.print(F("\tEncoder after calib:"));
-    Serial.print(currentTurretEncoderCount);
+    Serial.println(currentTurretEncoderCount);
 
     // delay(5000);
 
@@ -1350,9 +1353,9 @@ void QuarterbackTurret::updateReadMotorValues() {
       motor2Value = (recievedMessage.substring(recievedMessage.indexOf('&') + 1)).toInt();
     }
   }
-  Serial.print("Motor1: ");
-  Serial.print(motor1Value);
-  Serial.print("\tMotor2: ");
-  Serial.print(motor2Value);
-  Serial.println();
+  // Serial.print("Motor1: ");
+  // Serial.print(motor1Value);
+  // Serial.print("\tMotor2: ");
+  // Serial.print(motor2Value);
+  // Serial.println();
 }

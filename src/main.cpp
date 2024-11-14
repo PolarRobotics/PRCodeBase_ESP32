@@ -116,7 +116,7 @@ void setup() {
         SPECBOT_PIN4, // magnetometer scl
         ENC1_CHA, // turret encoder
         ENC1_CHB, // turret encoder
-        ENC2_CHA  // zeroing laser
+        ENC2_CHB  // zeroing laser
       );
       break;
     case quarterback_base:
