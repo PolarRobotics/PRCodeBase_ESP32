@@ -46,7 +46,8 @@ enum FlywheelSpeed {
   slow_inwards, stopped, slow_outwards, lvl1_outwards, lvl2_outwards, lvl3_outwards, maximum
 };
 #define QB_TURRET_NUM_SPEEDS 7
-const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7, 1.0};
+// const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.225, 0.35, 0.45, 1.0}; // with top prongs
+const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.215, 0.31, 0.3875, 1.0}; // without top prongs
 
 //================================//
 //  Debounce and Delay Constants  //
@@ -61,12 +62,12 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 #define QB_CROSS_HOLD_DELAY 200L
 #define QB_TURRET_INTERPOLATION_DELAY 5L
 #define QB_TURRET_THRESHOLD 35
-#define QB_TURRET_STICK_SCALE_FACTOR 0.25
+#define QB_TURRET_STICK_SCALE_FACTOR 0.15 // was 0.25, turned down for combine
 
 //================================//
 //        Speed Constants         //
 //================================//
-#define QB_MIN_PWM_VALUE 0.08
+#define QB_MIN_PWM_VALUE 0.1
 #define QB_HOME_PCT 0.125
 #define QB_HANDOFF  0.3
 #define QB_HOME_MAG 0.1
@@ -76,13 +77,13 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 //   Turret Angle Calculation Constants   //
 //========================================//
 // QB_COUNTS_PER_ENCODER_REV      Number of ticks per encoder revolution
-// QB_COUNTS_PER_TURRET_REV       Encoder Gear: 15t; Turret Track: 153t. Encoder spins 8.5 times for every turret revolution = 8500 ticks/rev
+// QB_COUNTS_PER_TURRET_REV       Encoder Gear: 18t; Turret Track: 152t. Encoder spins 8.4 times for every turret revolution = 8500 ticks/rev
 // QB_COUNTS_PER_TURRET_DEGREE    (8500/360) = 23.61... ticks per degree
 // QB_TURRET_SLOP_COUNTS          Backlash between input and output on the turret is high -> leads to problems when switching directions
 //                                    540 ticks on encoder before turret actually starts to move (Empirically measured)
-#define QB_COUNTS_PER_ENCODER_REV 1000
-#define QB_COUNTS_PER_TURRET_REV 8500
-#define QB_COUNTS_PER_TURRET_DEGREE 23.61
+#define QB_COUNTS_PER_ENCODER_REV 1250
+#define QB_COUNTS_PER_TURRET_REV 10556 // actually 10555.55555...6, but rounded up
+#define QB_COUNTS_PER_TURRET_DEGREE 29.321
 #define QB_TURRET_SLOP_COUNTS 540 // deprecated
 // #define QB_FALCON_TO_TURRET_RATIO 27 / 1
 // #define QB_ENCODER_TO_FALCON_RATIO 5 / 1
@@ -235,6 +236,8 @@ class QuarterbackTurret : public Robot {
     // targetTurretSpeed    default = 0
     float currentTurretSpeed;
     float targetTurretSpeed;
+    int8_t utmsCtr = 0; // temp ctr for debugging so updateTurretMotionStatus doesn't spam as much
+    #define UTMS_CTR_MAX 15
 
     //=====================================//
     //   Private Encoder State Variables   //
@@ -257,7 +260,7 @@ class QuarterbackTurret : public Robot {
     //    Robot Relative Headings    //
     //===============================//     
     int16_t currentRelativeHeading;       // default is undefined
-    int16_t targetRelativeHeading;        // default = 0
+    int16_t targetRelativeHeading;        // default = 0 //* as of 2024-11-15, in degrees only
     int32_t currentRelativeTurretCount;   // default is undefined
     
     //========================================//
@@ -335,7 +338,7 @@ class QuarterbackTurret : public Robot {
     //==================================//
     //    Magnetometer PID Variables    //
     //==================================//
-    // MAG_ERROR_AVG_ARRAY_LENGTH       The length of the array used for averaging the error
+    // PID_ERROR_AVG_ARRAY_LENGTH       The length of the array used for averaging the error
 
     // prevErrorVals        Array of previous error values used to average the last few error values together
     //                          to smooth out random spikes in readings from magnetometer
@@ -352,9 +355,9 @@ class QuarterbackTurret : public Robot {
     // turretPIDSpeed:      The calculated PWM value used in the PID loop
     // minMagSpeed:         Small PWM signals fail to make the motor turn leading to error in PID calculations. 
     //                        This sets a bottom bound on the PWM signal that can be calculated by the PID loop
-    #define MAG_ERROR_AVG_ARRAY_LENGTH 5
+    #define PID_ERROR_AVG_ARRAY_LENGTH 5
     // TODO: convert to appropriate (u)int#_t types
-    int prevErrorVals[MAG_ERROR_AVG_ARRAY_LENGTH] = { 0, 0, 0, 0, 0 };
+    int prevErrorVals[PID_ERROR_AVG_ARRAY_LENGTH] = { 0, 0, 0, 0, 0 };
     int prevErrorIndex = 0;
     bool firstAverage = true;
     long previousTime = 0;
@@ -379,7 +382,7 @@ class QuarterbackTurret : public Robot {
     void calibMagnetometer();
     void calculateHeadingMag();
     void holdTurretStill();
-    float turretPIDController(int setPoint, float kp, float kd, float ki, float maxSpeed);
+    float turretPIDController(float current, float target, float kp, float kd, float ki, float maxSpeed);
 
     /* MAGNETOMETER CURRENT STATE NOTES / PLAN (from April 9th, 2024 7:56 PM)
       - the PID controller works pretty well, tested on table rotating quickly

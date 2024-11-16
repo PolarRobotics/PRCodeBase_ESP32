@@ -19,6 +19,7 @@ void QuarterbackTurret::turretEncoderISR() {
   }
 }
 
+#pragma region Constructor
 QuarterbackTurret::QuarterbackTurret(
   uint8_t flywheelLeftPin,    // M1
   uint8_t flywheelRightPin,   // M2
@@ -118,7 +119,9 @@ QuarterbackTurret::QuarterbackTurret(
 
   Uart_Turret.begin(115200, SERIAL_8N1, RX2, TX2);
 }
+#pragma endregion
 
+#pragma region action()
 void QuarterbackTurret::action() {
   //! Control Schema
   //* Touchpad: Emergency Stop
@@ -177,6 +180,7 @@ void QuarterbackTurret::action() {
         if (mode != combine) {
           switchMode(combine);
           this->combinePosition = combineStraight;
+          targetRelativeHeading = 0;
           zeroTurret();
         } else {
           switchMode(manual);
@@ -217,22 +221,40 @@ void QuarterbackTurret::action() {
           if (dbDpadLeft->debounceAndPressed(ps5.Left())) {
             if (this->combinePosition == combineStraight) {
               this->combinePosition = combineLeft;
-              moveTurretAndWait(-45);
+              // moveTurretAndWait(-45);
+              targetRelativeHeading = -45;
             } else if (this->combinePosition == combineRight) {
               this->combinePosition = combineStraight;
-              moveTurretAndWait(0);
+              // moveTurretAndWait(0);
+              targetRelativeHeading = 0;
             }
           } 
           //* D-Pad Right: Move right one position
           else if (dbDpadRight->debounceAndPressed(ps5.Right())) {
             if (this->combinePosition == combineStraight) {
               this->combinePosition = combineRight;
-              moveTurretAndWait(45);
+              // moveTurretAndWait(45);
+              targetRelativeHeading = 45;
             } else if (this->combinePosition == combineLeft) {
               this->combinePosition = combineStraight;
-              moveTurretAndWait(0);
+              // moveTurretAndWait(0);
+              targetRelativeHeading = 0;
             }
           }
+
+          // Run the PID loop
+          turretPIDSpeed = turretPIDController((float)getCurrentHeading(), (float)targetRelativeHeading, kp, kd, ki, .3);
+          setTurretSpeed(turretPIDSpeed);
+
+          // if (utmsCtr <= UTMS_CTR_MAX) {
+          //   utmsCtr = 0;
+            Serial.print(F("combine mode -- ctec = "));
+            Serial.print(currentTurretEncoderCount);
+            Serial.print(F("; ttec = "));
+            Serial.println(targetTurretEncoderCount);
+          // } else {
+          //   utmsCtr++;
+          // }
         } else  
         //* Right Stick X: Turret Control
         // Left = CCW, Right = CW
@@ -293,11 +315,14 @@ void QuarterbackTurret::action() {
 
   printDebug();
 }
+#pragma endregion
 
 // note that because the direction is flipped to be more intuitive for the driver,
 // the "positive" direction is reversal/red on the falcon, and the "negative" direction is forwards/green
 // positive direction is also positive encoder direction, and vice versa
 void QuarterbackTurret::setTurretSpeed(float absoluteSpeed, bool overrideEncoderTare) {
+  // Serial.print(F("setTurretSpeed called with speed = "));
+  // Serial.println(absoluteSpeed);
   if (enabled) {
     targetTurretSpeed = constrain(absoluteSpeed, -1.0, 1.0);
     turretMotor.write(-targetTurretSpeed); // flip direction so that + is CW and - is CCW
@@ -313,6 +338,7 @@ void QuarterbackTurret::setTurretSpeed(float absoluteSpeed, bool overrideEncoder
   }
 }
 
+#pragma region Old Rel Turret
 void QuarterbackTurret::moveTurret(int16_t heading, bool relativeToRobot, bool ramp) {
   moveTurret(heading, degrees, QB_HOME_PCT, relativeToRobot, ramp);
 }
@@ -332,10 +358,11 @@ void QuarterbackTurret::moveTurret(int16_t heading, TurretUnits units, float pow
     // todo
     if (relativeToRobot) {
       // todo: use encoder + laser to determine position
-      targetRelativeHeading = heading;
+      // targetRelativeHeading = heading;
       if (units == degrees) {
-        moveTurret(heading, counts, power, relativeToRobot, ramp);
-      } else if (units == counts) {
+        // old code that does not work well
+      //   moveTurret(heading, counts, power, relativeToRobot, ramp);
+      // } else if (units == counts) {
         int8_t sign = copysign(1, currentTurretEncoderCount);
         // currentTurretEncoderCount = abs(currentTurretEncoderCount);
         // currentTurretEncoderCount %= 360;
@@ -368,7 +395,7 @@ void QuarterbackTurret::moveTurret(int16_t heading, TurretUnits units, float pow
 
         // currentTurretEncoderCount = targetTurretEncoderCount; // currentTurretEncoderCount is updated by interrupt
       }
-      currentRelativeHeading = targetRelativeHeading;
+      // currentRelativeHeading = targetRelativeHeading;
     } else { // relative to field
       // todo: use magnetometer
     }
@@ -384,12 +411,20 @@ void QuarterbackTurret::moveTurretAndWait(int16_t heading, float power, bool rel
     delay(10);
   }
 }
+#pragma endregion
 
 void QuarterbackTurret::updateTurretMotionStatus() {
-  Serial.print(F("update called with ctec = "));
-  Serial.print(currentTurretEncoderCount);
-  Serial.print(F("; ttec = "));
-  Serial.println(targetTurretEncoderCount);
+  // if (utmsCtr >= UTMS_CTR_MAX) {
+  //   utmsCtr = 0;
+    Serial.print(F("update called with ctec = "));
+    Serial.print(currentTurretEncoderCount);
+    Serial.print(F("; ttec = "));
+    Serial.print(targetTurretEncoderCount);
+    Serial.print(F("; error (ct) = "));
+    Serial.println(fabs((currentTurretEncoderCount % QB_COUNTS_PER_TURRET_REV) - targetTurretEncoderCount));
+  // } else {
+  //   utmsCtr++;
+  // }
   // determines if encoder is within "spec"
   if (turretMoving && fabs((currentTurretEncoderCount % QB_COUNTS_PER_TURRET_REV) - targetTurretEncoderCount) < QB_TURRET_THRESHOLD) {
     turretMoving = false;
@@ -397,6 +432,7 @@ void QuarterbackTurret::updateTurretMotionStatus() {
   }
 }
 
+// deprecated
 void QuarterbackTurret::turretDirectionChanged() {
   if (currentTurretSpeed > 0 && targetTurretSpeed < 0) { // going CW, trying to go CCW
     currentTurretEncoderCount -= slopError;
@@ -407,6 +443,7 @@ void QuarterbackTurret::turretDirectionChanged() {
   }
 }
 
+//* get current heading in degrees
 int16_t QuarterbackTurret::getCurrentHeading() {
   return (int)((double) currentTurretEncoderCount / QB_COUNTS_PER_TURRET_DEGREE) % 360;
 }
@@ -446,6 +483,7 @@ int QuarterbackTurret::CalculateRotation(float currentAngle, float targetAngle) 
     }
 }
 
+// not currently used
 int16_t QuarterbackTurret::findNearestHeading(int16_t targetHeading, int16_t currentHeading) {
   // assuming targetHeading is positive
   int16_t positiveHeading = targetHeading;
@@ -473,10 +511,12 @@ int16_t QuarterbackTurret::findNearestHeading(int16_t targetHeading, int16_t cur
   }
 }
 
+// not currently used
 int16_t QuarterbackTurret::findNearestHeading(int16_t targetHeading) {
   return findNearestHeading(targetHeading, currentRelativeHeading);
 }
 
+#pragma region Assembly
 void QuarterbackTurret::aimAssembly(AssemblyAngle angle, bool force) {
   if (enabled) {
     if (!assemblyMoving) {
@@ -515,12 +555,14 @@ void QuarterbackTurret::moveAssemblySubroutine() {
   if (targetAssemblyAngle == straight) {
     assemblyMotor.write(QB_ASM_SPEED);
   } else if (targetAssemblyAngle == angled) {
-    assemblyMotor.write(-QB_ASM_SPEED);
+    assemblyMotor.write(-1.25*QB_ASM_SPEED);
   }
   assemblyStartTime = millis();
   assemblyMoving = true;
 }
+#pragma endregion
 
+#pragma region Cradle
 //! this is a dangerous function to call
 // should only be called with known good state
 void QuarterbackTurret::moveCradleSubroutine() {
@@ -592,7 +634,9 @@ void QuarterbackTurret::moveCradle(CradleState state, bool force) {
 
   // Serial.println();
 }
+#pragma endregion
 
+#pragma region Flywheels
 void QuarterbackTurret::setFlywheelSpeed(float absoluteSpeed) {
   // update the motors so they are spinning at the new speed
   if (enabled) {
@@ -630,7 +674,9 @@ void QuarterbackTurret::adjustFlywheelSpeedStage(SpeedStatus speed) {
 
   setFlywheelSpeedStage(static_cast<FlywheelSpeed>(idx));
 }
+#pragma endregion
 
+#pragma region Auto Mode
 void QuarterbackTurret::switchMode() {
   if (mode == manual) {
     switchMode(automatic);
@@ -648,7 +694,9 @@ void QuarterbackTurret::switchTarget(TargetReceiver target) {
   this->target = target;
   // todo: not sure if this needs more functionality?
 }
+#pragma endregion
 
+#pragma region Macros
 void QuarterbackTurret::loadFromCenter() {
   this->runningMacro = true;
   aimAssembly(straight);
@@ -676,7 +724,7 @@ void QuarterbackTurret::handoff() {
     long currentTime = millis();
     while ((currentTime + 4000) > millis()) {
       calculateHeadingMag();
-      turretPIDSpeed = turretPIDController(targetAbsoluteHeading, .01, 0, 0, .25);
+      turretPIDSpeed = turretPIDController(headingDeg, (float)targetAbsoluteHeading, .01, 0, 0, .25);
       setTurretSpeed(turretPIDSpeed, true);
     }
     cradleActuator.write(1.0);
@@ -928,7 +976,9 @@ void QuarterbackTurret::reset() {
   this->initialized = true;
   this->runningMacro = false;
 }
+#pragma endregion
 
+#pragma region Safety
 bool QuarterbackTurret::testForDisableOrStop() {
   //* Touchpad: Emergency Stop
   if (ps5.Touchpad()) {
@@ -964,6 +1014,7 @@ void QuarterbackTurret::emergencyStop() {
   cradleActuator.write(0);
   // TODO: stop assembly stepper motor
 }
+#pragma endregion
 
 void QuarterbackTurret::printDebug() {
   /*
@@ -986,6 +1037,7 @@ void QuarterbackTurret::printDebug() {
   }
 }
 
+#pragma region Magnetometer
 /**
  * @brief Sets up magnetometer
  * @authors Rhys Davies, Corbin Hibler
@@ -1156,6 +1208,8 @@ void QuarterbackTurret::calibMagnetometer() {
     eIntegral = 0;
     previousTime = millis();
 
+    setTurretSpeed(0);
+
     // delay(5000);
 }
 
@@ -1206,19 +1260,21 @@ void QuarterbackTurret::calculateHeadingMag() {
     if (headingDeg > 360) headingDeg = ((int) headingDeg) % 360; 
 
     /*DEBUGGING PRINTOUTS*/
-    //Serial.print("X:  "); Serial.print(lis3mdl.x); 
-    //Serial.print("\tY:  "); Serial.print(lis3mdl.y); 
-    //Serial.print("\tMinX:  "); Serial.print(mag_xMin); 
-    //Serial.print("\tMaxX:  "); Serial.print(mag_xMax); 
-    //Serial.print("\tMinY:  "); Serial.print(mag_yMin); 
-    //Serial.print("\tMaxY:  "); Serial.print(mag_yMax); 
-    //Serial.print("\txAdapt:  "); Serial.print(mag_xVal);
-    //Serial.print("\tyAdapt:  "); Serial.print(mag_yVal);
-    //Serial.print("\tHeading [deg]:   "); Serial.print(headingDeg);
-    //Serial.println();
+    // Serial.print("X:  "); Serial.print(lis3mdl.x); 
+    // Serial.print("\tY:  "); Serial.print(lis3mdl.y); 
+    // Serial.print("\tMinX:  "); Serial.print(mag_xMin); 
+    // Serial.print("\tMaxX:  "); Serial.print(mag_xMax); 
+    // Serial.print("\tMinY:  "); Serial.print(mag_yMin); 
+    // Serial.print("\tMaxY:  "); Serial.print(mag_yMax); 
+    // Serial.print("\txAdapt:  "); Serial.print(mag_xVal);
+    // Serial.print("\tyAdapt:  "); Serial.print(mag_yVal);
+    // Serial.print("\tHeading [deg]:   "); Serial.print(headingDeg);
+    // Serial.println();
     }
 }
+#pragma endregion
 
+#pragma region PID
 /**
  * @brief Checks if the turret should be held still and runs the PID loop setting turret speed equal to PWM value calculated
  * @author George Rak
@@ -1233,7 +1289,7 @@ void QuarterbackTurret::holdTurretStill() {
     }
 
     //Run the PID loop
-    turretPIDSpeed = turretPIDController(targetAbsoluteHeading, kp, kd, ki, .2);
+    turretPIDSpeed = turretPIDController(headingDeg, (float)targetAbsoluteHeading, kp, kd, ki, .2);
     setTurretSpeed(turretPIDSpeed, true);
   }
 }
@@ -1243,46 +1299,46 @@ void QuarterbackTurret::holdTurretStill() {
  * @author George Rak
  * @date 4-9-2024
 */
-float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, float ki, float maxSpeed) {
+float QuarterbackTurret::turretPIDController(float current, float target, float kp, float kd, float ki, float maxSpeed) {
   if (maxSpeed > .5) { maxSpeed = .5; }
   else if (maxSpeed < -.5) { maxSpeed = -.5; }
 
-  //Measure the time elapsed since last iteration
+  // Measure the time elapsed since last iteration
   long currentTime = millis();
   float deltaT = ((float)(currentTime - previousTime));
 
-  //PID loops should update as fast as possible but if it waits too long this could be a problem
+  // PID loops should update as fast as possible but if it waits too long this could be a problem
   if (deltaT > QB_TURRET_PID_MIN_DELTA_T && deltaT < QB_TURRET_PID_MAX_DELTA_T) {
 
-    //Find which direction will be closer to requested angle
-    int e = CalculateRotation(headingDeg, targetAbsoluteHeading);
+    // Find which direction will be closer to requested angle
+    int e = CalculateRotation(current, target);
 
-    //Taking the average of the error
+    // Taking the average of the error
     prevErrorVals[prevErrorIndex] = e;
     prevErrorIndex++;
-    prevErrorIndex %= MAG_ERROR_AVG_ARRAY_LENGTH;
+    prevErrorIndex %= PID_ERROR_AVG_ARRAY_LENGTH;
 
-    //For the first one populate the average so it does not freak out
+    // For the first one populate the average so it does not freak out
     if (firstAverage) {
-      for (int i = 0; i<MAG_ERROR_AVG_ARRAY_LENGTH; i++) {
+      for (int i = 0; i < PID_ERROR_AVG_ARRAY_LENGTH; i++) {
         prevErrorVals[i] = e;
       }
       firstAverage = false;
     }
 
-    //Taking the avergage for error
+    // Taking the avergage for error
     int avgError = 0;
-    for (int i = 0; i < MAG_ERROR_AVG_ARRAY_LENGTH; i++) {
+    for (int i = 0; i < PID_ERROR_AVG_ARRAY_LENGTH; i++) {
       avgError += prevErrorVals[i];
     }
-    avgError /= MAG_ERROR_AVG_ARRAY_LENGTH;
+    avgError /= PID_ERROR_AVG_ARRAY_LENGTH;
     e = avgError;
 
-    //Calculate the derivative and integral values
+    // Calculate the derivative and integral values
     float eDerivative = (e - ePrevious);
     eIntegral = eIntegral + e * .01;
 
-    //Computer the PID control signal
+    // Compute the PID control signal
     float u = (kp * e) + (ki * eIntegral) + (kd * eDerivative);
 
     // Constrain output PWM values to -.2 to .2
@@ -1300,15 +1356,15 @@ float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, f
       ePrevious = 0;
     }
 
-    //Serial.print("DeltaT: "); Serial.print(deltaT);
-    //Serial.print("\tError: [deg]:  "); Serial.print(e);
-    //Serial.print("\tP: "); Serial.print((kp*e), 4);
-    //Serial.print("\tI: "); Serial.print((ki * eIntegral), 4);
-    //Serial.print("\tD:\t"); Serial.print((kd*eDerivative) , 4);
-    //Serial.print("\tPWM Value: "); Serial.print(u , 4);
-    //Serial.print("\tCurrent [deg]: "); Serial.print(headingDeg, 0);
-    //Serial.print("\tTarget [deg]: "); Serial.print(targetAbsoluteHeading);
-    //Serial.println();
+    Serial.print("DeltaT: "); Serial.print(deltaT);
+    Serial.print("\tError: [deg]:  "); Serial.print(e);
+    Serial.print("\tP: "); Serial.print((kp * e), 4);
+    Serial.print("\tI: "); Serial.print((ki * eIntegral), 4);
+    Serial.print("\tD:\t"); Serial.print((kd * eDerivative) , 4);
+    Serial.print("\tPWM Value: "); Serial.print(u , 4);
+    Serial.print("\tCurrent [deg]: "); Serial.print(current, 0);
+    Serial.print("\tTarget [deg]: "); Serial.print(target);
+    Serial.println();
 
     // Update variables for next iteration
     previousTime = currentTime;
@@ -1320,15 +1376,17 @@ float QuarterbackTurret::turretPIDController(int setPoint, float kp, float kd, f
 
     return -u;
   } else if (deltaT > QB_TURRET_PID_BAD_DELTA_T) {
-    //Drop the value if the time since last loop is too high so that errors don't spike
+    // Drop the value if the time since last loop is too high so that errors don't spike
     previousTime = currentTime;
     return turretPIDSpeed;
   } else {
-    //If the loop runs faster than the minimum time just return the last value and wait for next loop
+    // If the loop runs faster than the minimum time just return the last value and wait for next loop
     return turretPIDSpeed;
   }
 }
+#pragma endregion
 
+#pragma region Stabilization
 /**
  * @brief Reads a UART communication from the other ESP mounted to the turret. This ESP currently provides the speed of both motors on the drivetrain so we know if the robot is moving
  * @author George Rak
@@ -1366,3 +1424,4 @@ void QuarterbackTurret::updateReadMotorValues() {
   // Serial.print(motor2Value);
   // Serial.println();
 }
+#pragma endregion
