@@ -49,7 +49,7 @@
 constexpr float MOTORTYPE_BNS_ARRAY[NUM_MOTOR_TYPES][3] = {
 // Boost   Normal  Slow
   {0.70f,  0.60f,  0.30f}, // index 0: Big Ampflow Motor
-  {0.85f,  0.70f,  0.40f}, // index 1: Small Ampflow Motor
+  {1.00f,  0.85f,  0.40f}, // index 1: Small Ampflow Motor
   {0.70f,  0.60f,  0.30f}, // index 2: Pancake Ampflow Motor
   {0.80f,  0.60f,  0.40f}, // index 3: Mecanum Motor (Torquenado)
   {0.60f,  0.40f,  0.15f}, // index 4: Falcon500 motors
