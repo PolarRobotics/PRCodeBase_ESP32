@@ -24,8 +24,7 @@ QuarterbackTurret::QuarterbackTurret(
   uint8_t flywheelRightPin,   // M2
   uint8_t cradlePin,          // M3
   uint8_t turretPin,          // M4
-  uint8_t assemblyStepPin,    // S1
-  uint8_t assemblyDirPin,     // S2 
+  uint8_t assemblyPin,        // S1
   uint8_t magnetometerSdaPin, // S3
   uint8_t magnetometerSclPin, // S4
   uint8_t turretEncoderPinA,  // E1A
@@ -43,6 +42,7 @@ QuarterbackTurret::QuarterbackTurret(
   this->currentAssemblyAngle = unknownAngle;
   this->targetAssemblyAngle = straight; // while the initial state is unknown, we want it to be straight
   this->assemblyMoving = false; // it is safe to assume the assembly is not moving
+  this->assemblyTriggerToggled = false;
 
   this->currentCradleState = forward; // in case the startup state is strange, force the cradle to move back once on startup
   this->targetCradleState = back;
@@ -93,6 +93,7 @@ QuarterbackTurret::QuarterbackTurret(
   // TODO: initiate assembly/tilter stepper motor with lib
   cradleActuator.setup(cradlePin, big_ampflow); // TODO: change to MotorInterface when merged
   turretMotor.setup(turretPin, falcon); // TODO: add encoder
+  assemblyMotor.setup(assemblyPin, small_12v);
   flywheelLeftMotor.setup(flywheelLeftPin, falcon);
   flywheelRightMotor.setup(flywheelRightPin, falcon);
 
@@ -156,13 +157,19 @@ void QuarterbackTurret::action() {
       }
 
       //* Left Trigger (L2): Toggle Assembly Angle
-      if (ps5.L2()) {
+      if (ps5.L2() && !assemblyTriggerToggled) {
+        assemblyTriggerToggled = true;
+
         // if angled or unknown, move to straight angle. else, move to firing angle.
         if (currentAssemblyAngle == unknownAngle || currentAssemblyAngle == angled) {
           aimAssembly(straight);
         } else if (currentAssemblyAngle == straight) {
           aimAssembly(angled);
         }
+      } else if (assemblyTriggerToggled && !ps5.L2()) {
+        assemblyTriggerToggled = false;
+      } else {
+        aimAssembly(targetAssemblyAngle);
       }
 
       //* Share Button: Switch to Combine Mode
@@ -197,8 +204,8 @@ void QuarterbackTurret::action() {
         stickFlywheel = (ps5.LStickY() / 127.5f);
         stickTurret = (ps5.RStickX() / 127.5f);  
         
-        Serial.print(F("stickTurret: "));
-        Serial.println(stickTurret);
+        // Serial.print(F("stickTurret: "));
+        // Serial.println(stickTurret);
 
         if (mode == combine) {
           //* Combine "Macro" Mode
@@ -506,9 +513,9 @@ void QuarterbackTurret::aimAssembly(AssemblyAngle angle, bool force) {
 // should only be called with known good state
 void QuarterbackTurret::moveAssemblySubroutine() {
   if (targetAssemblyAngle == straight) {
-    assemblyMotor.write(0.5);
+    assemblyMotor.write(QB_ASM_SPEED);
   } else if (targetAssemblyAngle == angled) {
-    assemblyMotor.write(-0.5);
+    assemblyMotor.write(-QB_ASM_SPEED);
   }
   assemblyStartTime = millis();
   assemblyMoving = true;

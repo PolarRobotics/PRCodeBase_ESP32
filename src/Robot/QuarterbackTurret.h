@@ -54,7 +54,7 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 // 50 ms for default delay (50L)
 // 750 ms to fully extend or retract the linear actuator
 #define QB_BASE_DEBOUNCE_DELAY 50L
-#define QB_ASSEMBLY_TILT_DELAY 250L
+#define QB_ASSEMBLY_TILT_DELAY 200L
 #define QB_CRADLE_TRAVEL_DELAY 750L
 #define QB_CIRCLE_HOLD_DELAY 750L
 #define QB_TRIANGLE_HOLD_DELAY 200L
@@ -70,6 +70,7 @@ const float flywheelSpeeds[QB_TURRET_NUM_SPEEDS] = {-0.1, 0, 0.1, 0.3, 0.5, 0.7,
 #define QB_HOME_PCT 0.125
 #define QB_HANDOFF  0.3
 #define QB_HOME_MAG 0.1
+#define QB_ASM_SPEED 0.3
 
 //========================================//
 //   Turret Angle Calculation Constants   //
@@ -198,6 +199,7 @@ class QuarterbackTurret : public Robot {
     AssemblyAngle targetAssemblyAngle;
     bool assemblyMoving;
     uint32_t assemblyStartTime;
+    bool assemblyTriggerToggled;
 
     //===============================//
     //  Ball Cradle State Variables  //
@@ -426,8 +428,7 @@ class QuarterbackTurret : public Robot {
       uint8_t flywheelRightPin,   // M2
       uint8_t cradlePin,          // M3
       uint8_t turretPin,          // M4
-      uint8_t assemblyStepPin,    // S1
-      uint8_t assemblyDirPin,     // S2 
+      uint8_t assemblyPin,        // S1
       uint8_t magnetometerSdaPin, // S3
       uint8_t magnetometerSclPin, // S4
       uint8_t turretEncoderPinA,  // E1A

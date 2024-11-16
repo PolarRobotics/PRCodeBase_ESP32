@@ -110,8 +110,7 @@ void setup() {
         M2_PIN, // right flywheel
         M3_PIN, // cradle
         M4_PIN, // turret
-        SPECBOT_PIN1, // assembly stepper step
-        SPECBOT_PIN2, // assembly stepper dir
+        SPECBOT_PIN1, // assembly motor
         SPECBOT_PIN3, // magnetometer sda
         SPECBOT_PIN4, // magnetometer scl
         ENC1_CHA, // turret encoder
