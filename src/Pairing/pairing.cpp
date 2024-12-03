@@ -130,12 +130,127 @@ void getAddress(const char* &addr) {
   else addr = &str.c_str()[0]; // get value of char ptr string
 }
 
+void pairToLastController(int time, const char* &addrCharPtr) {
+  // see if we have a stored MAC address and try to pair to it
+  if (addrCharPtr != nullptr) {
+    Serial.print(F("Connecting to PS5 Controller @ "));
+    Serial.println(addrCharPtr);
+    ps5.begin(addrCharPtr);
+    int timer = 0;
+
+    // wait until discovery time passes or we connect to a controller
+    while (timer < time && !ps5.isConnected()) {
+      delay(LOOP_DELAY);
+      timer += LOOP_DELAY;
+
+      // slow blink when searching for previous device
+      if (timer % (5 * LOOP_DELAY) == 0) {
+        toggleBuiltInLED();
+      }
+    }
+
+    // return if we get a connection at this point
+    if (ps5.isConnected()) {
+      Serial.println(F("PS5 Controller Connected!"));
+      yeet;
+    } // otherwise look for devices to pair with
+  } 
+}
+
+void searchForNewController(int time, const char* &addrCharPtr) {
+// begin broadcasting as "ESP32" as master role
+  if (!SerialBT.begin("ESP32", true)) { 
+    Serial.println(F("SerialBT failed!")); // function returns false if failed
+    abort();
+  }
+  SerialBT.enableSSP(); // according to SRC of this code, doesn't seem to change anything
+
+  Serial.println(F("Searching for devices..."));
+  BTScanResults* btDeviceList = SerialBT.getScanResults();  // may be accessing from different threads!
+
+  // Beginning of Asynchronous Discovery Process
+  if (startDiscovery()) {
+    int timer = 0;
+
+    // recall foundController is set by the callback in `startDiscovery` when a valid PS5 controller is found
+    while (timer < time && !foundController) { 
+      delay(LOOP_DELAY);
+      timer += LOOP_DELAY;
+      Lights::getInstance().updateLEDS();
+      
+      // double blink when in pairing mode like PS5 controller
+      // at: 300/400, 600/700
+      if ((timer % 1000) % (7 * LOOP_DELAY) == 0)
+        toggleBuiltInLED();
+      else if ((timer % 1000) % (4 * LOOP_DELAY) == 0)
+        toggleBuiltInLED();
+      else if ((timer % 1000) % (3 * LOOP_DELAY) == 0 &&
+               (timer % 1000) % (9 * LOOP_DELAY) != 0) // also does 600
+        toggleBuiltInLED();
+    }
+
+    Serial.println(F("Stopping discoverAsync... "));
+    SerialBT.discoverAsyncStop();
+    Serial.println(F("discoverAsync stopped"));
+    delay(5000); //! why is this delay here? does removing it affect anything? this was in the original code, I must never have noticed it.
+    
+    // If we find devices, list them and try to pair if it is a valid controller.
+    if(btDeviceList->getCount() > 0) {
+      BTAddress addr;
+      int channel = 0;
+      Serial.println(F("Found devices:"));
+      for (int i = 0; i < btDeviceList->getCount(); i++) {
+        BTAdvertisedDevice* device = btDeviceList->getDevice(i);
+        addr = device->getAddress();
+        auto name = device->getName().c_str(); // get name to print and check
+        auto addrStr = addr.toString().c_str(); // std::string doesn't work with Serial.print for some reason
+        // ps5.begin requires a const char*, so get memory address of string/char array
+        addrCharPtr = &addr.toString().c_str()[0]; // declared at top of function
+
+        // print out relevant controller details
+        // reminder that we need to use flash strings whenever possible, so don't try to collapse this
+        Serial.print(i);
+        Serial.print(F(" | "));
+        Serial.print(addr.toString().c_str());
+        Serial.print(F(" | "));
+        Serial.print(device->getName().c_str());
+        Serial.print(F(" | "));
+        Serial.println(device->getRSSI());
+
+        if (addressIsController(addrCharPtr) || (strcmp(device->getName().c_str(), "Wireless Controller") == 0)) {
+          Serial.print(F("Connecting to PS5 Controller @ "));
+          Serial.println(addrCharPtr);
+          ps5.begin(addrCharPtr);
+          while (!ps5.isConnected()) {
+            toggleBuiltInLED(); // fast blinking when hooked into a device but not yet connected
+            delay(LOOP_DELAY);
+            Lights::getInstance().updateLEDS();
+          }
+          Serial.print(F("PS5 Controller Connected: "));
+          Serial.println(ps5.isConnected());
+          storeAddress(&addr.toString().c_str()[0], true);
+          setBuiltInLED(true); // solid blue light when fully paired
+        }
+      }
+
+      // if not connected at this point, no valid controllers have been found
+      if (!ps5.isConnected()) setBuiltInLED(false); // turn the led off
+    } else {
+      Serial.println(F("Found no pairable devices."));
+      setBuiltInLED(false);
+    }
+  } else {
+    Serial.println(F("Asynchronous discovery failed."));
+    setBuiltInLED(false);
+  }
+}
+
 /// @brief Search for PS5 Controllers and pair to the first one found
 /// @param doRePair whether or not to search for the controller whose MAC address is stored in non-volatile memory, default true
-/// @param discoverTime the time limit to repair to existing devices, or search for new devices, in milliseconds
-void activatePairing(bool doRePair, int discoverTime = DEFAULT_BT_DISCOVER_TIME, int repairTime = DEFAULT_BT_REPAIR_TIME) {
+/// @param discoverTime the time limit to search for new devices, in milliseconds
+/// @param rePairTime the time limit to repair to existing devices, in milliseconds
+void activatePairing(bool doRePair, int discoverTime = DEFAULT_BT_DISCOVER_TIME, int rePairTime = DEFAULT_BT_REPAIR_TIME) {
   Serial.begin(115200);
-  // pinMode(LED_BUILTIN, OUTPUT);
 
   // if we just returned a char*, it would be deleted and point to nowhere useful
   // so we have to pass in and mutate a (reference to a) char array.

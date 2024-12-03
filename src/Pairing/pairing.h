@@ -8,6 +8,6 @@ bool addressIsController(const char * addrCharPtr);
 bool startDiscovery();
 void storeAddress(const char *addr, bool clear);
 void getAddress(const char *&addr);
-void activatePairing(bool doRePair = true, int discoverTime = DEFAULT_BT_DISCOVER_TIME);
+void activatePairing(bool doRePair = true, int discoverTime = DEFAULT_BT_DISCOVER_TIME, int rePairTime = DEFAULT_BT_REPAIR_TIME);
 
 #endif // PAIRING_H
