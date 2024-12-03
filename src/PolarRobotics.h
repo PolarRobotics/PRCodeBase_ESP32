@@ -20,6 +20,10 @@
 #define PR_CODEBASE_VERSION "PR_CODEBASE_VERSION not defined!"
 #endif
 
+#ifndef USE_PIN_PAIRING
+#define USE_PIN_PAIRING false
+#endif
+
 // [PIN DECLARATIONS]
 // please follow: 
 // https://docs.google.com/spreadsheets/d/17pdff4T_3GTAkoctwm2IMg07Znoo-iJkyDGN5CqXq3w/edit#gid=0
