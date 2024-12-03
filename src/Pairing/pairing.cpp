@@ -158,7 +158,7 @@ void pairToLastController(int time, const char* &addrCharPtr) {
 }
 
 void searchForNewController(int time, const char* &addrCharPtr) {
-// begin broadcasting as "ESP32" as master role
+  // begin broadcasting as "ESP32" as master role
   if (!SerialBT.begin("ESP32", true)) { 
     Serial.println(F("SerialBT failed!")); // function returns false if failed
     abort();
@@ -166,7 +166,7 @@ void searchForNewController(int time, const char* &addrCharPtr) {
   SerialBT.enableSSP(); // according to SRC of this code, doesn't seem to change anything
 
   Serial.println(F("Searching for devices..."));
-  BTScanResults* btDeviceList = SerialBT.getScanResults();  // may be accessing from different threads!
+  BTScanResults* btDeviceList = SerialBT.getScanResults(); // may be accessing from different threads!
 
   // Beginning of Asynchronous Discovery Process
   if (startDiscovery()) {
@@ -185,7 +185,7 @@ void searchForNewController(int time, const char* &addrCharPtr) {
       else if ((timer % 1000) % (4 * LOOP_DELAY) == 0)
         toggleBuiltInLED();
       else if ((timer % 1000) % (3 * LOOP_DELAY) == 0 &&
-               (timer % 1000) % (9 * LOOP_DELAY) != 0) // also does 600
+              (timer % 1000) % (9 * LOOP_DELAY) != 0) // also does 600
         toggleBuiltInLED();
     }
 
@@ -195,7 +195,7 @@ void searchForNewController(int time, const char* &addrCharPtr) {
     delay(5000); //! why is this delay here? does removing it affect anything? this was in the original code, I must never have noticed it.
     
     // If we find devices, list them and try to pair if it is a valid controller.
-    if(btDeviceList->getCount() > 0) {
+    if (btDeviceList->getCount() > 0) {
       BTAddress addr;
       int channel = 0;
       Serial.println(F("Found devices:"));
