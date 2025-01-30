@@ -25,12 +25,12 @@
 // https://docs.google.com/spreadsheets/d/17pdff4T_3GTAkoctwm2IMg07Znoo-iJkyDGN5CqXq3w/edit#gid=0
 //
 //  Motor and Pin #  |     Configurations     |
-//     | mot# |##|   | 2 wheels  |  4 wheels  |
-// ____|______|__|___|___________|____________|
-#define M1_PIN 32 // | leftDriv  | leftFront  |
-#define M2_PIN 33 // | rightDriv | rightFront |
-#define M3_PIN 26 // |    N/A    | leftRear   |
-#define M4_PIN 27 // |    N/A    | rightRear  |
+//     | mot# |##|   |  2 wheels  |  4 wheels  |
+// ____|______|__|___|____________|____________|
+#define M1_PIN 32 // | leftMotor  | leftFront  |
+#define M2_PIN 33 // | rightMotor | rightFront |
+#define M3_PIN 26 // |    N/A     | leftRear   |
+#define M4_PIN 27 // |    N/A     | rightRear  |
 
 // Pins for special bot features, conveyor, flywheels, etc...
 #define SPECBOT_PIN1 18
@@ -41,8 +41,8 @@
 // Encoder pin definitions
 #define ENC1_CHA 35
 #define ENC1_CHB 34
-#define ENC2_CHA VP
-#define ENC2_CHB VN
+#define ENC2_CHA 36 // VP
+#define ENC2_CHB 39 // VN
 
 // pin for ws2812 LEDs to indicate positions 
 #define LED_PIN 4   
