@@ -141,21 +141,17 @@ float MotorControl::ramp(float requestedPower,  float accelRate) {
     // Serial.print("\n");
 
     lastRampTime = millis();
-    if (requestedPower > requestedRPM) // need to speed up
-    {
+    if (requestedPower > requestedRPM) {// need to speed up
         requestedRPM = requestedRPM + accelRate * timeElapsed;
         if (requestedRPM > requestedPower) 
             requestedRPM = requestedPower; // to prevent you from speeding up past the requested speed
     }
-    else // need to slow down
-    {
+    else { // need to slow down
         requestedRPM = requestedRPM - accelRate * timeElapsed; 
         if (requestedRPM < requestedPower) 
             requestedRPM = requestedPower; // to prevent you from slowing down below the requested speed
     }
-    
     return requestedRPM;
-
 }
 
 /**
@@ -164,8 +160,7 @@ float MotorControl::ramp(float requestedPower,  float accelRate) {
  * 
 */
 void MotorControl::setTargetSpeed(int target_rpm) {
- if (target_rpm > deadZone || target_rpm < -1 * deadZone) // dead zone
- {
+ if (target_rpm > deadZone || target_rpm < -deadZone) { // deadzone
   float ramped_speed = ramp(target_rpm, 1200.0f); // first call ramp for traction control and to make sure the PI loop dose not use large accerations
   this->sendRPM(ramped_speed); //convert speed to the coresponding motor power and write to the motor 
  }

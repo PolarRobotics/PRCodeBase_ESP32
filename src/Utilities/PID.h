@@ -8,28 +8,30 @@ private:
   float k_i;
   float k_d;
   float error_threshold;
+  float output_minmax[2]; //sets bounds on the output of the controller
 
-  float error_minmax[2]; //sets bounds on the output of the controller
-  // float max_err;
-  // float min_;
-
-  float process_variable; //measured data from the sensor
+  // Inputs
+  float measured_value; //measured data from the sensor
   float set_point; // commanded value for the controller to try and match
-  float error; //difference between commanded value and actual measured value
   bool cl_enable; // enable or disables the CL calculations
+  
+  // Outputs
+  float controller_output; // the calculated PID value to be sent to the plant
+  float error; // difference between commanded value and actual measured value
   
   // Integration
   float prev_error;
   float integral_sum;
   unsigned long prev_integral_time;
   
-  float integrate(int current_error);
+  float integrate(float current_error);
   void integralReset();
+  float differentiate(float current_error);
 public:
-  PID(float k_p, float k_i, float k_d = 0.0f, float error_thresh, 
-    float error_min, float error_max);
+  PID();
+  PID(float k_p, float k_i, float k_d = 0.0f, float error_thresh = 0.2f, 
+    float output_min = 0.0f, float output_max = 1.0f);
   void setCLState(bool state);
-  bool setProcessVar(int measured_value);
-  bool setSetpoint(float commanded_value);
-  float PILoop();
+  void setMeasuredValue(float measured_value);
+  float PIDLoop(float setpoint);
 };

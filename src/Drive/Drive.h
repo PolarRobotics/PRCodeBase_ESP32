@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Robot/MotorControl.h>
 #include "PolarRobotics.h"
+#include "Utilities/PID.h"
 
 // Gyro Includes
 #include <Adafruit_MPU6050.h>
@@ -87,12 +88,12 @@ class Drive {
     // Gyroscope
     Adafruit_MPU6050 *mpu;
     sensors_event_t a, g, temp;
+    PID DriveStraight;
 
     float currentAngleSpeed;
     bool drivingStraight;
 
     // PILoop
-    bool CL_enable = true;
     int motorDiff;
     int motorDiffCorrection;
     float k_p;
@@ -102,8 +103,6 @@ class Drive {
     // int prev_current_error;
     // int integral_sum;
     // unsigned long prev_integral_time;
-
-
     void calcTurning(float stickTrn, float fwdLinPwr);
 
   protected:
@@ -141,12 +140,6 @@ class Drive {
     void printSetup();
     virtual void printDebugInfo();
     virtual void printCsvInfo();
-
-    // // CL Gyro Functions
-    // void setCurrentAngleSpeed(float speed);
-    // int PILoop();
-    // int integrate(int current_error);
-    // void integrateReset();
 
     //* The following variables are initialized in the constructor
     // maximum speed for these is 1.0

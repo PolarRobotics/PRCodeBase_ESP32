@@ -90,25 +90,29 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
   } 
 
   // Gyro
-  if (hasGyro || mpu->begin()){
-    CL_enable = true;
+  if (hasGyro && mpu->begin()){
+    Serial.println(F("Reading data from Gyroscope"));
 
     switch (botType) {
         case BotType::lineman: { k_p = 1500; break; }
         case BotType::receiver: { k_p = 1500; break; }
         case BotType::runningback: { k_p = 1500; break; }
-        case BotType::quarterback: { k_p = 1500; break; }
+        case BotType::quarterback_base: { k_p = 1500; break; }
     }
-    
     k_i = 0;
 
-    integral_sum = 0;
-    prev_current_error = 0;
-    prev_integral_time = 0;
+    // Set up the PID object, DriveStraight with the desired gains, error threshold and signal bounds
+    DriveStraight = PID(k_p, k_i, 0, ERROR_THRESHOLD, 0, 100);
 
-    // mpu->begin(0x68);
-    // mpu->setGyroRange(MPU6050_RANGE_250_DEG);  // 250, 500, 1000, 2000
-    // mpu->setFilterBandwidth(MPU6050_BAND_260_HZ);  // 260, 184, 94, 44, 21, 10, 5
+    // enable the control loop
+    DriveStraight.setCLState(true);
+
+    mpu->begin(0x68);
+    mpu->setGyroRange(MPU6050_RANGE_250_DEG);  // 250, 500, 1000, 2000
+    mpu->setFilterBandwidth(MPU6050_BAND_260_HZ);  // 260, 184, 94, 44, 21, 10, 5
+  }
+  else {
+    Serial.println(F("unable to read data from Gyroscope"));
   }
 }
 
@@ -220,6 +224,7 @@ void Drive::generateMotionValues(float tankModePct) {
             // just move forward directly
             requestedMotorPower[0] = speedScalar * stickForwardRev;
             requestedMotorPower[1] = speedScalar * stickForwardRev;
+            drivingStraight = true;
         } else { // moving forward and turning
             /*
             if the sticks are not in any of the edge cases tested for above (when both sticks are not 0),
@@ -309,7 +314,8 @@ void Drive::calcTurning(float stickTrn, float fwdLinPwr) {
 
 void Drive::emergencyStop() {
     // Turn off the CL controller, in the event that it is unstable
-    CL_enable = false;
+    DriveStraight.setCLState(false);
+
     M1.stop(); 
     M2.stop();
 }
@@ -423,7 +429,8 @@ void Drive::update() {
         // Serial.print(g.gyro.z - 0.03);
         // Serial.print(" rad/s ");
         // set the current angle speed, to be used in the control loop later
-        currentAngleSpeed = g.gyro.z - 0.03; // rad/s
+        // currentAngleSpeed = g.gyro.z - 0.03; // rad/s
+        DriveStraight.setMeasuredValue(g.gyro.z - 0.03); // rad/s
     }
   
 
@@ -431,7 +438,7 @@ void Drive::update() {
     generateMotionValues();
     //delay(100);
     if (CL_enable) {
-        motorDiff = PILoop()*.5;
+        motorDiff = DriveStraight.PIDLoop(0)*.5;
         // Serial.print(motorDiff);
         // Serial.print("  ");
         // Serial.print("Rotation Z, ");
@@ -452,23 +459,22 @@ void Drive::update() {
         M2.setTargetSpeed(M2.Percent2RPM(requestedMotorPower[1])); // results in 800ish rpm from encoder
     }
     
-
     printDebugInfo();
 
-    // Generate turning motion
-    generateMotionValues(RB_TANK_MODE_PCT);
-    //printDebugInfo();
+    // // Generate turning motion
+    // // generateMotionValues(RB_TANK_MODE_PCT);
+    // //printDebugInfo();
 
-    // calculate the value to set to the motors to based on the acceleration rate
-    requestedMotorPower[0] = M1.ramp(requestedMotorPower[0], ACCELERATION_RATE);
-    requestedMotorPower[1] = M2.ramp(requestedMotorPower[1], ACCELERATION_RATE);
+    // // calculate the value to set to the motors to based on the acceleration rate
+    // requestedMotorPower[0] = M1.ramp(requestedMotorPower[0], ACCELERATION_RATE);
+    // requestedMotorPower[1] = M2.ramp(requestedMotorPower[1], ACCELERATION_RATE);
 
-    // Set the ramp value to a function, needed for generateMotionValues
-    lastRampPower[0] = requestedMotorPower[0];
-    lastRampPower[1] = requestedMotorPower[1];
+    // // Set the ramp value to a function, needed for generateMotionValues
+    // lastRampPower[0] = requestedMotorPower[0];
+    // lastRampPower[1] = requestedMotorPower[1];
     
-    // Write the ramped value to the motor via MotorInterface
-    M1.write(requestedMotorPower[0]);
-    M2.write(requestedMotorPower[1]);
+    // // Write the ramped value to the motor via MotorInterface
+    // M1.write(requestedMotorPower[0]);
+    // M2.write(requestedMotorPower[1]);
 }
 
