@@ -32,22 +32,22 @@
 */
 
 Drive::Drive() {
-  Drive(lineman, big_ampflow, {1, 9, 6, 36});
+  Drive(lineman, {big_ampflow, 1, 9, 6, 36});
 }
 
 Drive::Drive(BotType botType, MotorType motorType) {
-  Drive(botType, motorType, {1, 9, 6, 36});
+  Drive(botType, {motorType, 1, 9, 6, 36});
 }
 
-Drive::Drive(BotType botType, MotorType motorType, drive_param_t driveParams, bool hasEncoders, int turnFunction, bool hasGyro) {
+Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int turnFunction, bool hasGyro) {
   this->botType = botType;
-  this->motorType = motorType;
   this->hasEncoders = hasEncoders;
-  this->hasGyro = false;
+  this->motorType = driveParams.motor_type;
   this->gearRatio = driveParams.gear_ratio;
   this->wheelBase = driveParams.wheel_base;
   this->R_Min = driveParams.r_min;
   this->R_Max = driveParams.r_max;
+  this->hasGyro = false;
 
   if (botType == quarterback_old) {
     this->BIG_BOOST_PCT = 0.8; 
@@ -171,59 +171,31 @@ float Drive::getTurnPower() {
 }
 
 /**
- * @brief setBSN sets the internal variable to the requested percent power, this is what the motor power gets multiplied by,
- * this is where the boost, slow and normal scalars get passed in
+ * @brief setSpeedScalar sets the internal variable to the requested percent power, this is what the motor power gets multiplied by,
+ * this is where the boost, normal and slow scalars get passed in
  * @author Rhys Davies
  * Created: 9-12-2022
  *
- * @param bsn input speed choice Drive::Boost, Drive::Slow, Drive::Normal
+ * @param bns input speed choice Drive::Boost, Drive::Normal, Drive::Slow
 */
-void Drive::setBSN(Speed bsn) {
+void Drive::setSpeedScalar(Speed bns) {
     // set the scalar to zero if the requested value is greater than 1, this is not entirely necessary, but is a safety
-    switch (bsn) {
-        case BOOST: {
-            switch (motorType) {
-                case MotorType::big_ampflow: { BSNscalar = BIG_BOOST_PCT; break; }
-                case MotorType::small_ampflow: { BSNscalar = SMALL_BOOST_PCT; break; }
-                case MotorType::mecanum: { BSNscalar = MECANUM_BOOST_PCT; break; }
-                case MotorType::falcon: { BSNscalar = FALCON_BOOST_PCT; break; }
-                case MotorType::small_12v: { BSNscalar = SMALL_12V_BOOST_PCT; break; }
-            }
-            break;
-        }
-        case NORMAL: {
-            switch (motorType) {
-                case MotorType::big_ampflow: { BSNscalar = BIG_NORMAL_PCT; break; }
-                case MotorType::small_ampflow: { BSNscalar = SMALL_NORMAL_PCT; break; }
-                case MotorType::mecanum: { BSNscalar = MECANUM_NORMAL_PCT; break; }
-                case MotorType::falcon: { BSNscalar = FALCON_NORMAL_PCT; break; }
-                case MotorType::small_12v: { BSNscalar = SMALL_12V_NORMAL_PCT; break; }
-            }
-            break;
-        }
-        case SLOW: {
-            switch (motorType) {
-                case MotorType::big_ampflow: { BSNscalar = BIG_SLOW_PCT; break; }
-                case MotorType::small_ampflow: { BSNscalar = SMALL_SLOW_PCT; break; }
-                case MotorType::mecanum: { BSNscalar = MECANUM_SLOW_PCT; break; }
-                case MotorType::falcon: { BSNscalar = FALCON_SLOW_PCT; break; }
-                case MotorType::small_12v: { BSNscalar = SMALL_12V_SLOW_PCT; break; }
-            }
-            break;
-        }
-        case BRAKE: {
-            BSNscalar = BRAKE_BUTTON_PCT;
-            break;
-        }
-    }
+    if (bns == Speed::BRAKE) 
+        speedScalar = BRAKE_BUTTON_PCT;
+    else
+        // Grab the predefined bns values from the 
+        speedScalar = MOTORTYPE_BNS_ARRAY[static_cast<uint8_t>(motorType)][static_cast<uint8_t>(bns)];
 }
 
-void Drive::setBSNValue(float bsn_pct) {
-    BSNscalar = bsn_pct;
+/**
+ * @brief setSpeedValue overrides the default predefined values from MOTORTYPE_BNS_ARRAY
+*/
+void Drive::setSpeedValue(float speed_pct) {
+    this->speedScalar = constrain(speed_pct, -1, 1);
 }
 
-float Drive::getBSN() {
-    return this->BSNscalar;
+float Drive::getSpeedScalar() {
+    return this->speedScalar;
 }
 
 /**
@@ -237,18 +209,17 @@ void Drive::generateMotionValues(float tankModePct) {
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             requestedMotorPower[0] = 0, requestedMotorPower[1] = 0; // not moving, set motors to zero
         } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward much so use tank mode
-            requestedMotorPower[0] = BSNscalar * abs(stickTurn)  * tankModePct;
-            requestedMotorPower[1] = -BSNscalar * abs(stickTurn) * tankModePct;
+            requestedMotorPower[0] = speedScalar * abs(stickTurn)  * tankModePct;
+            requestedMotorPower[1] = -speedScalar * abs(stickTurn) * tankModePct;
         } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward muchso use tank mode
-            requestedMotorPower[0] = -BSNscalar * abs(stickTurn) * tankModePct;
-            requestedMotorPower[1] = BSNscalar * abs(stickTurn)  * tankModePct;
+            requestedMotorPower[0] = -speedScalar * abs(stickTurn) * tankModePct;
+            requestedMotorPower[1] = speedScalar * abs(stickTurn)  * tankModePct;
         } // no general else since encountered infinite loop
     } else { // fwd stick is not zero
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             // just move forward directly
-            drivingStraight = true;
-            requestedMotorPower[0] = BSNscalar * stickForwardRev;
-            requestedMotorPower[1] = BSNscalar * stickForwardRev;
+            requestedMotorPower[0] = speedScalar * stickForwardRev;
+            requestedMotorPower[1] = speedScalar * stickForwardRev;
         } else { // moving forward and turning
             /*
             if the sticks are not in any of the edge cases tested for above (when both sticks are not 0),
@@ -259,21 +230,21 @@ void Drive::generateMotionValues(float tankModePct) {
             */
             drivingStraight = false;
             if(stickTurn > STICK_DEADZONE) { // turn Right
-                // switch(abs((BSNscalar * stickForwardRev)) > abs(lastRampPower[0])) {
+                // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[0])) {
                 //     case true: calcTurning(stickTurn, abs(lastRampPower[0])); break;
-                //     case false: calcTurning(stickTurn, abs(BSNscalar * stickForwardRev)); break;
+                //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
                 // }
-                calcTurning(abs(stickTurn), abs(BSNscalar * stickForwardRev));
+                calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
 
                 requestedMotorPower[0] = copysign(turnMotorValues[0], stickForwardRev);
                 requestedMotorPower[1] = copysign(turnMotorValues[1], stickForwardRev);
-            } else if (stickTurn < -STICK_DEADZONE) { // turn Left
-                // switch(abs((BSNscalar * stickForwardRev)) > abs(lastRampPower[1])) {
+            } else if(stickTurn < -STICK_DEADZONE) { // turn Left
+                // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[1])) {
                 //     case true: calcTurning(stickTurn, abs(lastRampPower[1])); break;
-                //     case false: calcTurning(stickTurn, abs(BSNscalar * stickForwardRev)); break;
+                //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
                 // }
 
-                calcTurning(abs(stickTurn), abs(BSNscalar * stickForwardRev));
+                calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
                 
                 requestedMotorPower[0] = copysign(turnMotorValues[1], stickForwardRev);
                 requestedMotorPower[1] = copysign(turnMotorValues[0], stickForwardRev);
@@ -482,10 +453,9 @@ int Drive::PILoop() {
  * turning and scaling motor values, the intention of this is so the
  * programmer doesnt have to call all the functions, this just handles it,
  * reducing clutter in the main file.
- * DO NOT CALL THIS FUNCTION UNTIL setStickPwr and setBSN have been called before update
+ * DO NOT CALL THIS FUNCTION UNTIL setStickPwr and setSpeedScalar have been called before update
  * @author Rhys Davies
  * Created: 9-12-2022
- * Updated: 10-11-2020
 */
 void Drive::update() {
     // Gather data from gyroscope and store in mpu object
@@ -528,5 +498,20 @@ void Drive::update() {
 
     printDebugInfo();
 
+    // Generate turning motion
+    generateMotionValues(RB_TANK_MODE_PCT);
+    //printDebugInfo();
+
+    // calculate the value to set to the motors to based on the acceleration rate
+    requestedMotorPower[0] = M1.ramp(requestedMotorPower[0], ACCELERATION_RATE);
+    requestedMotorPower[1] = M2.ramp(requestedMotorPower[1], ACCELERATION_RATE);
+
+    // Set the ramp value to a function, needed for generateMotionValues
+    lastRampPower[0] = requestedMotorPower[0];
+    lastRampPower[1] = requestedMotorPower[1];
+    
+    // Write the ramped value to the motor via MotorInterface
+    M1.write(requestedMotorPower[0]);
+    M2.write(requestedMotorPower[1]);
 }
 
