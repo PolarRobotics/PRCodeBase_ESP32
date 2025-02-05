@@ -406,49 +406,6 @@ void Drive::printCsvInfo() {
 }
 
 /**
- * @brief NEEDS SPELLCHECK integrate uses trapizodial intgration to calculate the running integral sum for the PI controller
- * 
-*/
-int Drive::integrate(int current_error) {
-  integral_sum = integral_sum + (current_error + prev_current_error); //*(millis()-prev_integral_time)/100;
-  prev_integral_time = millis();
-  prev_current_error = current_error;
-  
-  return integral_sum; 
-}
-
-/**
- * @brief NEEDS SPELLCHECK integrateReset resets the varibles in integral
- * 
-*/
-void Drive::integrateReset() {
-  integral_sum = 0;
-  prev_current_error = 0;
-  prev_integral_time = millis();
-}
-
-/**
- * @brief NEEDS SPELLCHECK PILoop is the closed loop controller. this is the main function for CL  
- * 
- * 
- * 
- * @author Grant Brautigam
- * Updated 11-19-2023
- * 
-*/
-int Drive::PILoop() {  
-  if (abs(currentAngleSpeed) >= ERROR_THRESHOLD) { // the motor wants to stop, skip and reset the PI loop  
-    motorDiffCorrection = 1500*currentAngleSpeed + k_i*integrate(currentAngleSpeed);
-    //Serial.println(motorDiffCorrection);
-  } else {
-    motorDiffCorrection = 0;
-    integrateReset();
-  }
-
-  return constrain(motorDiffCorrection, 0, 5000); 
-}
-
-/**
  * @brief updates the motors after calling all the functions to generate
  * turning and scaling motor values, the intention of this is so the
  * programmer doesnt have to call all the functions, this just handles it,

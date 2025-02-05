@@ -83,9 +83,11 @@ class Drive {
     float turnSensitivityScalar = 0.0f;
     float domainAdjustment = 0.0f;
 
+    // DriveStraight:
     // Gyroscope
     Adafruit_MPU6050 *mpu;
     sensors_event_t a, g, temp;
+
     float currentAngleSpeed;
     bool drivingStraight;
 
@@ -97,9 +99,9 @@ class Drive {
     float k_i;
     unsigned long lastTime;
     //integrate
-    int prev_current_error;
-    int integral_sum;
-    unsigned long prev_integral_time;
+    // int prev_current_error;
+    // int integral_sum;
+    // unsigned long prev_integral_time;
 
 
     void calcTurning(float stickTrn, float fwdLinPwr);
@@ -140,11 +142,11 @@ class Drive {
     virtual void printDebugInfo();
     virtual void printCsvInfo();
 
-    // CL Gyro Functions
-    void setCurrentAngleSpeed(float speed);
-    int PILoop();
-    int integrate(int current_error);
-    void integrateReset();
+    // // CL Gyro Functions
+    // void setCurrentAngleSpeed(float speed);
+    // int PILoop();
+    // int integrate(int current_error);
+    // void integrateReset();
 
     //* The following variables are initialized in the constructor
     // maximum speed for these is 1.0
