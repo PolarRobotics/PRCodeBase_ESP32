@@ -125,7 +125,7 @@ void setup() {
       break;
     case receiver:
       robot = new Lineman();
-      drive = new Drive(lineman, motorType, driveParams);
+      drive = new Drive(lineman, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
       lights.setupIndicator();
       break;
