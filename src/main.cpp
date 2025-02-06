@@ -62,6 +62,8 @@ void onDisconnect();
 // runs once at the start of the program
 void setup() {
   Serial.begin(115200);
+  Wire.begin(21, 22, 400000);
+  Wire.setTimeOut(30);
 
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(TACKLE_PIN, INPUT); // Try INPUT_PULLUP

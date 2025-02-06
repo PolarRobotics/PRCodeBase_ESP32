@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Robot/MotorControl.h>
 #include "PolarRobotics.h"
+#include <Wire.h>
 
 #ifndef NUM_MOTORS
 #define NUM_MOTORS 2
@@ -43,6 +44,10 @@
 #define SMALL_12V_SLOW_PCT           0.05f
 
 #define BRAKE_BUTTON_PCT 0
+
+// Motor Speed Defines
+#define ADDRESS 0x41
+#define SIZE 5
 
 // !TODO: not sure if this is the correct location for this array
 // This array must follow the same order as MotorType to be used effectively
@@ -117,6 +122,7 @@ class Drive {
     virtual void printDebugInfo();
     virtual void printCsvInfo();
     int getMotorWifiValue(int motorRequested);
+    int32_t getMotorSpeed();
 
     //* The following variables are initialized in the constructor
     // maximum speed for these is 1.0

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Drive/Drive.h"
 #include "Robot/MotorControl.h"
+#include <Wire.h>
 
 /**
  * @brief Drive Class, base class for specialized drive classes, this configuration is intended for the standard linemen.
@@ -328,6 +329,27 @@ void Drive::printSetup() {
     Serial.print(F("\n"));
 }
 
+int32_t Drive::getMotorSpeed(){
+    Wire.requestFrom(ADDRESS,SIZE);    //strlen(message)
+    if(Wire.available()) {
+        int data[SIZE] = {0,0,0,0,0};
+        for(int i = 0; i < SIZE; i++){
+            data[i] = Wire.read();
+        }
+        for(int i = 0; i < SIZE - 1; i++){
+            Serial.printf("%x" ,data[i]);
+            Serial.print("  ");
+        }
+        int32_t combinedData = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
+        Serial.print("Speed: ");
+        Serial.println(combinedData);
+        Wire.flush();
+        return combinedData;
+    }
+    Serial.println("No data recieved.");
+    return -2;
+}
+
 /**
  * prints the internal variables to the serial monitor in a clean format,
  * this function exists out of pure laziness to not have to comment out all the print statments
@@ -448,6 +470,8 @@ void Drive::update() {
     
     trackingMotorPower[0] = requestedMotorPower[0];
     trackingMotorPower[1] = requestedMotorPower[1];
+
+    getMotorSpeed();
 }
 
 int Drive::getMotorWifiValue(int motorRequested) {
