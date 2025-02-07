@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include "Drive/Drive.h"
 #include "Robot/MotorControl.h"
+#include "Drive.h"
+
+#pragma region Constructors
 
 /**
  * @brief Drive Class, base class for specialized drive classes, this configuration is intended for the standard linemen.
@@ -47,21 +50,7 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
   this->wheelBase = driveParams.wheel_base;
   this->R_Min = driveParams.r_min;
   this->R_Max = driveParams.r_max;
-  this->hasGyro = false;
-
-  if (botType == quarterback_old) {
-    this->BIG_BOOST_PCT = 0.8; 
-    this->BIG_NORMAL_PCT = 0.4; 
-    this->BIG_SLOW_PCT = 0.3;
-  } else if (botType == center) {
-    this->BIG_BOOST_PCT = 0.5;  
-    this->BIG_NORMAL_PCT = 0.4; 
-    this->BIG_SLOW_PCT = 0.25;
-  } else {
-    this->BIG_BOOST_PCT = 0.7;  
-    this->BIG_NORMAL_PCT = 0.6; 
-    this->BIG_SLOW_PCT = 0.3;
-  }
+  this->hasGyro = hasGyro;
 
   // initialize arrays
   for (int i = 0; i < NUM_MOTORS; i++) {
@@ -92,7 +81,11 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
   // Gyro
   if (hasGyro && mpu->begin()){
     Serial.println(F("Reading data from Gyroscope"));
-
+    
+    // set up the gyroscopes parameters
+    mpu->begin(0x68);
+    mpu->setGyroRange(MPU6050_RANGE_250_DEG);  // 250, 500, 1000, 2000
+    mpu->setFilterBandwidth(MPU6050_BAND_260_HZ);  // 260, 184, 94, 44, 21, 10, 5
     switch (botType) {
         case BotType::lineman: { k_p = 1500; break; }
         case BotType::receiver: { k_p = 1500; break; }
@@ -106,12 +99,8 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
 
     // enable the control loop
     DriveStraight.setCLState(true);
-
-    mpu->begin(0x68);
-    mpu->setGyroRange(MPU6050_RANGE_250_DEG);  // 250, 500, 1000, 2000
-    mpu->setFilterBandwidth(MPU6050_BAND_260_HZ);  // 260, 184, 94, 44, 21, 10, 5
   }
-  else {
+  else if (hasGyro && !mpu->begin()) {
     Serial.println(F("unable to read data from Gyroscope"));
   }
 }
@@ -131,6 +120,9 @@ void Drive::setMotorType(MotorType motorType) {
     this->motorType = motorType;
 }
 
+#pragma endregion
+
+#pragma region Inputs
 
 /**
  * setStickPwr takes the stick values passed in and normalizes them to values between -1 and 1
@@ -202,6 +194,10 @@ float Drive::getSpeedScalar() {
     return this->speedScalar;
 }
 
+#pragma endregion
+
+#pragma region Turning
+
 /**
  * generateTurnScalar takes the input stick power and scales the max turning power allowed with the forward power input
  * @authors Grant Brautigam, Rhys Davies, Max Phillips
@@ -209,13 +205,14 @@ float Drive::getSpeedScalar() {
 */
 void Drive::generateMotionValues(float tankModePct) {
     if (fabs(stickForwardRev) < STICK_DEADZONE) { // fwd stick is zero
-        drivingStraight = false;
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             requestedMotorPower[0] = 0, requestedMotorPower[1] = 0; // not moving, set motors to zero
         } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward much so use tank mode
+            drivingStraight = false;
             requestedMotorPower[0] = speedScalar * abs(stickTurn)  * tankModePct;
             requestedMotorPower[1] = -speedScalar * abs(stickTurn) * tankModePct;
         } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward muchso use tank mode
+            drivingStraight = false;
             requestedMotorPower[0] = -speedScalar * abs(stickTurn) * tankModePct;
             requestedMotorPower[1] = speedScalar * abs(stickTurn)  * tankModePct;
         } // no general else since encountered infinite loop
@@ -224,7 +221,7 @@ void Drive::generateMotionValues(float tankModePct) {
             // just move forward directly
             requestedMotorPower[0] = speedScalar * stickForwardRev;
             requestedMotorPower[1] = speedScalar * stickForwardRev;
-            drivingStraight = true;
+            // drivingStraight = true;
         } else { // moving forward and turning
             /*
             if the sticks are not in any of the edge cases tested for above (when both sticks are not 0),
@@ -312,6 +309,8 @@ void Drive::calcTurning(float stickTrn, float fwdLinPwr) {
     turnMotorValues[1] = M2.RPM2Percent(omega_R);
 }
 
+#pragma endregion
+
 void Drive::emergencyStop() {
     // Turn off the CL controller, in the event that it is unstable
     DriveStraight.setCLState(false);
@@ -319,6 +318,8 @@ void Drive::emergencyStop() {
     M1.stop(); 
     M2.stop();
 }
+
+#pragma region Debug
 
 void Drive::printSetup() {
     Serial.print(F("\nDrive::printSetup():"));
@@ -339,7 +340,9 @@ void Drive::printSetup() {
     Serial.print(F("\nEncoders: "));
     Serial.print(F("\nHas Encoders? "));
     Serial.print(this->hasEncoders ? F("True") : F("False"));
-
+    Serial.print(F("\nGyro: "));
+    Serial.print(F("\nHas Gyro? "));
+    Serial.print(this->hasGyro ? F("True") : F("False"));
     Serial.print(F("\n"));
 }
 
@@ -363,13 +366,13 @@ void Drive::printDebugInfo() {
     // Serial.print(F("  Right ReqPwr: "));
     // Serial.print(requestedMotorPower[1]);
 
-    Serial.print(F("  |  Omega: "));
-    Serial.print(omega);
+    // Serial.print(F("  |  Omega: "));
+    // Serial.print(omega);
 
-    Serial.print(F("  omega_L: "));
-    Serial.print(omega_L);
-    Serial.print(F("  omega_R: "));
-    Serial.print(omega_R);
+    // Serial.print(F("  omega_L: "));
+    // Serial.print(omega_L);
+    // Serial.print(F("  omega_R: "));
+    // Serial.print(omega_R);
 
     // Serial.print(F("  lastRampTime "));
     // Serial.print(lastRampTime[0]);
@@ -379,6 +382,14 @@ void Drive::printDebugInfo() {
     // Serial.print(currentRampPower[0]);
     // Serial.print(F("  requestedPower - currentRampPower "));
     // Serial.println(requestedPower - currentRampPower[mtr], 10);
+
+    Serial.print(F("  DriveStraight: "));
+    Serial.print(drivingStraight ? F("true ") : F("false"));
+    Serial.print(F("  currentAngleSpeed: "));
+    Serial.print(currentAngleSpeed);
+    Serial.print(F("  motorDiff: "));
+    Serial.print(motorDiff);
+
 
     Serial.print(F("  Left Motor: "));
     Serial.print(requestedMotorPower[0]);
@@ -411,6 +422,10 @@ void Drive::printCsvInfo() {
     Serial.println(5); // last line is -ALWAYS- println or else the python script will break
 }
 
+#pragma endregion
+
+#pragma region Update
+
 /**
  * @brief updates the motors after calling all the functions to generate
  * turning and scaling motor values, the intention of this is so the
@@ -429,15 +444,14 @@ void Drive::update() {
         // Serial.print(g.gyro.z - 0.03);
         // Serial.print(" rad/s ");
         // set the current angle speed, to be used in the control loop later
-        // currentAngleSpeed = g.gyro.z - 0.03; // rad/s
-        DriveStraight.setMeasuredValue(g.gyro.z - 0.03); // rad/s
+        currentAngleSpeed = g.gyro.z - 0.03; // rad/s
+        DriveStraight.setMeasuredValue(currentAngleSpeed); // rad/s
     }
   
-
     // Generate turning motion
     generateMotionValues();
     //delay(100);
-    if (CL_enable) {
+    if (drivingStraight) {
         motorDiff = DriveStraight.PIDLoop(0)*.5;
         // Serial.print(motorDiff);
         // Serial.print("  ");
@@ -459,8 +473,6 @@ void Drive::update() {
         M2.setTargetSpeed(M2.Percent2RPM(requestedMotorPower[1])); // results in 800ish rpm from encoder
     }
     
-    printDebugInfo();
-
     // // Generate turning motion
     // // generateMotionValues(RB_TANK_MODE_PCT);
     // //printDebugInfo();
@@ -481,6 +493,8 @@ void Drive::update() {
     trackingMotorPower[1] = requestedMotorPower[1];
 }
 
+#pragma endregion
+
 int Drive::getMotorWifiValue(int motorRequested) {
     int valueToReturn = 0;
     if (motorRequested >= 0 && motorRequested < NUM_MOTORS) {
@@ -490,3 +504,6 @@ int Drive::getMotorWifiValue(int motorRequested) {
     return valueToReturn;
 }
 
+void Drive::setEnableDriveStraight(bool ena_drive_straight) {
+    this->drivingStraight = ena_drive_straight;
+}

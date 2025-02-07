@@ -14,6 +14,7 @@
 #include <PolarRobotics.h>
 #include <Pairing/pairing.h>
 #include <Utilities/ConfigManager.h>
+#include <Utilities/Debouncer.h>
 
 // Robot Includes
 #include <Robot/Lights.h>
@@ -30,10 +31,6 @@
 #include <Drive/Drive.h>
 #include <Drive/DriveMecanum.h>
 
-// Gyroscope
-Adafruit_MPU6050 mpu;
-//bool useGyro = true;
-
 // Primary Parent Component Pointers
 Robot* robot = nullptr; // subclassed if needed
 Drive* drive = nullptr; // subclassed if needed
@@ -48,6 +45,13 @@ drive_param_t driveParams;
 
 // Config
 ConfigManager config;
+
+// Gyroscope
+Adafruit_MPU6050 mpu;
+bool hasGyro;
+// if driveStraight is enabled or disabled from the controller input 
+bool enableDriveStraight; 
+Debouncer* dbDriveStraight;
 
 // Prototypes for Controller Callbacks
 // Implementations located at the bottom of this file
@@ -75,6 +79,11 @@ void setup() {
   Serial.println(config.toString());
   robotType = config.getBotType();
   driveParams = config.getDriveParams();
+
+  // !TODO eventually want to move this to robot configuration, but for now keeping here
+  hasGyro = true;
+  enableDriveStraight = false;
+  dbDriveStraight = new Debouncer(50L);
 
   // work backwards from highest ordinal enum since lineman should be default case
   switch (robotType) {
@@ -131,7 +140,8 @@ void setup() {
     case lineman:
     default: // Assume lineman
       robot = new Lineman();
-      drive = new Drive(lineman, driveParams);
+      // drive = new Drive(lineman, driveParams);
+      drive = new Drive(lineman, driveParams, false, 2, hasGyro);
       drive->setupMotors(M1_PIN, M2_PIN);
   }
 
@@ -147,22 +157,25 @@ void setup() {
   // Once paired, set lights to appropriate status
   lights.setLEDStatus(Lights::PAIRED);
 
-  //if (useGyro) {
-    // Gyro paired?
-      if (!mpu.begin()) {
-      //Serial.println("Failed to find MPU6050 chip");
-      while (1) {
-        delay(10);
-      }
-    }
-    //Serial.println("MPU6050 Found!");
+  // !TODO move to drive
+  // if (hasGyro) {
+  //   // Gyro paired?
+  //   if (!mpu.begin()) {
+  //     Serial.println("Failed to find MPU6050 chip");
+  //     // while (1) {
+  //     //   delay(10);
+  //     // }
+  //     hasGyro = false;
+  //   } else {
+  //     Serial.println("MPU6050 Found!");
 
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);  // 250, 500, 1000, 2000
-    //Serial.print("Gyro range set to: " + String(mpu.getGyroRange()));
-      
-    mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);  // 260, 184, 94, 44, 21, 10, 5
-    //Serial.print("Filter bandwidth set to: " + String(mpu.getFilterBandwidth()));
-  //}
+  //     mpu.setGyroRange(MPU6050_RANGE_500_DEG);  // 250, 500, 1000, 2000
+  //     //Serial.print("Gyro range set to: " + String(mpu.getGyroRange()));
+        
+  //     mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);  // 260, 184, 94, 44, 21, 10, 5
+  //     //Serial.print("Filter bandwidth set to: " + String(mpu.getFilterBandwidth()));
+  //   }
+  // }
 
   ps5.attachOnConnect(onConnection);
   ps5.attachOnDisconnect(onDisconnect);
@@ -235,16 +248,25 @@ void loop() {
             case Lights::OFF:  lights.setLEDStatus(Lights::OFF);  break;
           }
         }
-
-        if (lights.returnStatus() == lights.DISCO)
-          lights.updateLEDS();
       }
+
+      // conditions to enter DriveStraight mode
+      // if (hasGyro && dbDriveStraight->debounceAndPressed(ps5.Up())) {
+      // !TODO: add error handling for if the robot has the hasGyro param set to true, but the gyro is not connected, like an gyroOkay status or something
+      if (dbDriveStraight->debounceAndPressed(ps5.Up())) {
+        enableDriveStraight = !enableDriveStraight;
+        // !TODO: add a light change to blue to indicate being in drivestraight mode
+        Serial.println(enableDriveStraight ? F("DriveStraight Disabled") : F("DriveStraight Enabled"));
+        drive->setEnableDriveStraight(enableDriveStraight);
+      }
+
       //* Update the motors based on the inputs from the controller
       //* Can change functionality depending on subclass, like robot.action()
       drive->update();
       // drive->printDebugInfo(); // comment this line out to reduce compile time and memory usage
       // drive->printCsvInfo(); // prints info to serial monitor in a csv (comma separated value) format
 
+      // update the disco lights after a couple to allow for the moving animation and prevent flickering
       if (lights.returnStatus() == lights.DISCO && ((millis() - lights.updateTime) >= lights.updateSwitchTime)) {
         lights.updateLEDS();
         lights.updateTime = millis();
@@ -254,7 +276,7 @@ void loop() {
     robot->action();
 
     // DEBUGGING:  
-    // drive->printDebugInfo(); // comment this line out to reduce compile time and memory usage
+    drive->printDebugInfo(); // comment this line out to reduce compile time and memory usage
     // drive->printCsvInfo(); // prints info to serial monitor in a csv (comma separated value) format
     // lights.printDebugInfo();
 
@@ -269,7 +291,7 @@ void loop() {
       ((QuarterbackTurret*) robot)->emergencyStop();
     }
   }
-  Serial.print("Main Loop End ");
+  // Serial.print("Main Loop End ");
 }
 
 /**

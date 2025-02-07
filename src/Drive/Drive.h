@@ -84,7 +84,7 @@ class Drive {
     float turnSensitivityScalar = 0.0f;
     float domainAdjustment = 0.0f;
 
-    // DriveStraight:
+    //* DriveStraight:
     // Gyroscope
     Adafruit_MPU6050 *mpu;
     sensors_event_t a, g, temp;
@@ -142,6 +142,7 @@ class Drive {
     virtual void printDebugInfo();
     virtual void printCsvInfo();
     int getMotorWifiValue(int motorRequested);
+    void setEnableDriveStraight(bool ena_drive_straight);
 
     //* The following variables are initialized in the constructor
     // maximum speed for these is 1.0
