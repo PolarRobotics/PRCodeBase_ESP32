@@ -79,7 +79,7 @@ void MotorControl::write(float pct) {
 */
 void MotorControl::sendRPM(int rpm){
   
-  if (uesCurveFit) {
+  if (useCurveFit) {
     if (rpm < 0)
       negativeDir = true;
     else 
@@ -160,13 +160,14 @@ float MotorControl::ramp(float requestedPower,  float accelRate) {
  * 
 */
 void MotorControl::setTargetSpeed(int target_rpm) {
- if (target_rpm > deadZone || target_rpm < -deadZone) { // deadzone
-  float ramped_speed = ramp(target_rpm, 1200.0f); // first call ramp for traction control and to make sure the PI loop dose not use large accerations
-  this->sendRPM(ramped_speed); //convert speed to the coresponding motor power and write to the motor 
- }
- else
-  this->stop(); // stopping the motor
-
+  if (target_rpm > deadZone || target_rpm < -deadZone) { // deadzone
+    // first call ramp for traction control and to make sure the PI loop dose not use large accerations
+    // !TODO: test moving ramp back to drive, ramping the commanded speed rather than the motor values
+    this->sendRPM(ramp(target_rpm, 1200.0f)); //convert speed to the coresponding motor power and write to the motor 
+  }
+  else
+    // !TODO: this may cause problems
+    this->stop(); // stopping the motor
 }
 
 /**

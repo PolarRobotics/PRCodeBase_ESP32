@@ -86,7 +86,7 @@ class Drive {
 
     //* DriveStraight:
     // Gyroscope
-    Adafruit_MPU6050 *mpu;
+    Adafruit_MPU6050 mpu;
     sensors_event_t a, g, temp;
     PID DriveStraight;
 
@@ -115,6 +115,7 @@ class Drive {
     float trackingMotorPower[NUM_MOTORS];
     float lastRampPower[NUM_MOTORS];
     float turnMotorValues[NUM_MOTORS];
+    float sendMotorRPM[NUM_MOTORS];
 
   public:
     enum Speed {
@@ -142,7 +143,7 @@ class Drive {
     virtual void printDebugInfo();
     virtual void printCsvInfo();
     int getMotorWifiValue(int motorRequested);
-    void setEnableDriveStraight(bool ena_drive_straight);
+    void toggleDriveStraight(bool ena_drive_straight);
 
     //* The following variables are initialized in the constructor
     // maximum speed for these is 1.0

@@ -80,11 +80,12 @@ void setup() {
   robotType = config.getBotType();
   driveParams = config.getDriveParams();
 
+
   // !TODO eventually want to move this to robot configuration, but for now keeping here
   hasGyro = true;
   enableDriveStraight = false;
   dbDriveStraight = new Debouncer(50L);
-
+  
   // work backwards from highest ordinal enum since lineman should be default case
   switch (robotType) {
     //* Each case should have the following:
@@ -96,27 +97,27 @@ void setup() {
       robot = new Kicker(SPECBOT_PIN1, SPECBOT_PIN2, ENC1_CHA, ENC1_CHB);
       drive = new Drive(kicker, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
-      break;
+    break;
     case quarterback_old:
       robot = new Quarterback(SPECBOT_PIN1, SPECBOT_PIN2, SPECBOT_PIN3);
       drive = new Drive(quarterback_old, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
-      break;
+    break;
     case mecanum_center:
       robot = new MecanumCenter(SPECBOT_PIN1, SPECBOT_PIN2);
       drive = new DriveMecanum();
       ((DriveMecanum*) drive)->setupMotors(M1_PIN, M2_PIN, M3_PIN, M4_PIN);
-      break;
+    break;
     case center:
       robot = new Center(SPECBOT_PIN1, SPECBOT_PIN2);
       drive = new Drive(center, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
-      break;
+    break;
     case runningback:
       robot = new Lineman();
       drive = new Drive(runningback, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
-      break;
+    break;
     case quarterback_turret:
       robot = new QuarterbackTurret(
         M1_PIN, // left flywheel
@@ -130,12 +131,12 @@ void setup() {
         ENC1_CHB, // turret encoder
         ENC2_CHB  // zeroing laser
       );
-      break;
+    break;
     case quarterback_base:
       drive = new Drive(quarterback_base, driveParams);
       drive->setupMotors(M1_PIN, M2_PIN);
       robot = new QuarterbackBase(drive);
-      break;
+    break;
     case receiver:
     case lineman:
     default: // Assume lineman
@@ -144,9 +145,9 @@ void setup() {
       drive = new Drive(lineman, driveParams, false, 2, hasGyro);
       drive->setupMotors(M1_PIN, M2_PIN);
   }
-
+  
   // drive->printSetup();
-
+  
   // Set up and initialize lights for pairing process
   lights.setupLEDS();
   lights.setLEDStatus(Lights::PAIRING);
@@ -156,26 +157,6 @@ void setup() {
 
   // Once paired, set lights to appropriate status
   lights.setLEDStatus(Lights::PAIRED);
-
-  // !TODO move to drive
-  // if (hasGyro) {
-  //   // Gyro paired?
-  //   if (!mpu.begin()) {
-  //     Serial.println("Failed to find MPU6050 chip");
-  //     // while (1) {
-  //     //   delay(10);
-  //     // }
-  //     hasGyro = false;
-  //   } else {
-  //     Serial.println("MPU6050 Found!");
-
-  //     mpu.setGyroRange(MPU6050_RANGE_500_DEG);  // 250, 500, 1000, 2000
-  //     //Serial.print("Gyro range set to: " + String(mpu.getGyroRange()));
-        
-  //     mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);  // 260, 184, 94, 44, 21, 10, 5
-  //     //Serial.print("Filter bandwidth set to: " + String(mpu.getFilterBandwidth()));
-  //   }
-  // }
 
   ps5.attachOnConnect(onConnection);
   ps5.attachOnDisconnect(onDisconnect);
@@ -192,10 +173,6 @@ void setup() {
 
 // runs continuously after setup(). controls driving and any special robot functionality during a game
 void loop() {
-
-  Serial.print("Main Loop ");
-  //delay(10);
-
   if (ps5.isConnected()) {
     // Serial.print(F("\r\nConnected"));
     // ps5.setLed(255, 0, 0);   // set LED red
@@ -257,7 +234,7 @@ void loop() {
         enableDriveStraight = !enableDriveStraight;
         // !TODO: add a light change to blue to indicate being in drivestraight mode
         Serial.println(enableDriveStraight ? F("DriveStraight Disabled") : F("DriveStraight Enabled"));
-        drive->setEnableDriveStraight(enableDriveStraight);
+        drive->toggleDriveStraight(enableDriveStraight);
       }
 
       //* Update the motors based on the inputs from the controller
