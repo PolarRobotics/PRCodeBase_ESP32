@@ -98,8 +98,7 @@ void MotorControl::sendRPM(int rpm){
 
 }
 
-int MotorControl::Percent2RPM(float pct)
-{
+int MotorControl::Percent2RPM(float pct) {
   // float temp = constrain(pct, -1, 1);
   return this->max_rpm * constrain(pct, -1.0f, 1.0f);
 }
@@ -160,14 +159,15 @@ float MotorControl::ramp(float requestedPower,  float accelRate) {
  * 
 */
 void MotorControl::setTargetSpeed(int target_rpm) {
-  if (target_rpm > deadZone || target_rpm < -deadZone) { // deadzone
+  // if (target_rpm > deadZone || target_rpm < -deadZone) { // deadzone
     // first call ramp for traction control and to make sure the PI loop dose not use large accerations
     // !TODO: test moving ramp back to drive, ramping the commanded speed rather than the motor values
-    this->sendRPM(ramp(target_rpm, 1200.0f)); //convert speed to the coresponding motor power and write to the motor 
-  }
-  else
+  // this->sendRPM(ramp(target_rpm, 1200.0f)); //convert speed to the coresponding motor power and write to the motor 
+  this->write(RPM2Percent(ramp(target_rpm, 1200.0f)));
+  // }
+  // else
     // !TODO: this may cause problems
-    this->stop(); // stopping the motor
+    // this->stop(); // stopping the motor
 }
 
 /**

@@ -88,6 +88,7 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
       mpu.begin(0x68);
       mpu.setGyroRange(MPU6050_RANGE_250_DEG);  // 250, 500, 1000, 2000
       mpu.setFilterBandwidth(MPU6050_BAND_260_HZ);  // 260, 184, 94, 44, 21, 10, 5
+      // DriveStraight Gains:
       switch (botType) {
         case BotType::lineman: { k_p = 1500; break; }
         case BotType::receiver: { k_p = 1500; break; }
@@ -97,7 +98,7 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
       k_i = 0;
 
       // Set up the PID object, DriveStraight with the desired gains, error threshold and signal bounds
-      DriveStraight = PID(k_p, k_i, 0, ERROR_THRESHOLD, 0, 1000);
+      DriveStraight = PID(k_p, k_i, 0, ERROR_THRESHOLD, -1000.0f, 1000.0f);
 
       // enable the control loop
       DriveStraight.setCLState(false);
@@ -475,8 +476,8 @@ void Drive::update() {
   sendMotorRPM[1] = M2.Percent2RPM(requestedMotorPower[1]);
 
   if (drivingStraight){
-    sendMotorRPM[0] = sendMotorRPM[0] + motorDiff;
-    sendMotorRPM[1] = sendMotorRPM[1] - motorDiff;
+    sendMotorRPM[0] = sendMotorRPM[0] - motorDiff;
+    sendMotorRPM[1] = sendMotorRPM[1] + motorDiff;
     M1.setTargetSpeed(sendMotorRPM[0]);
     M2.setTargetSpeed(sendMotorRPM[1]);
   } else {
