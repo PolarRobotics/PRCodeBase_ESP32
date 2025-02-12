@@ -52,6 +52,9 @@ Drive::Drive(BotType botType, drive_param_t driveParams, bool hasEncoders, int t
   this->R_Max = driveParams.r_max;
   this->hasGyro = hasGyro;
 
+  this->DriveState = idle; //initialize the drivestate to idle
+  this->drivingStraight = false;
+
   // initialize arrays
   for (int i = 0; i < NUM_MOTORS; i++) {
     requestedMotorPower[i] = 0.0f;
@@ -211,18 +214,28 @@ void Drive::generateMotionValues(float tankModePct) {
     if (fabs(stickForwardRev) < STICK_DEADZONE) { // fwd stick is zero
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             requestedMotorPower[0] = 0, requestedMotorPower[1] = 0; // not moving, set motors to zero
-        } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward much so use tank mode
+        } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward so use tank mode
             // drivingStraight = false;
+            DriveState = tank_right;
             requestedMotorPower[0] = speedScalar * abs(stickTurn)  * tankModePct;
             requestedMotorPower[1] = -speedScalar * abs(stickTurn) * tankModePct;
-        } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward muchso use tank mode
+        } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward so use tank mode
             // drivingStraight = false;
+            DriveState = tank_left;
             requestedMotorPower[0] = -speedScalar * abs(stickTurn) * tankModePct;
             requestedMotorPower[1] = speedScalar * abs(stickTurn)  * tankModePct;
         } // no general else since encountered infinite loop
     } else { // fwd stick is not zero
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             // just move forward directly
+            // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+            if (fabs(stickTurn) < STICK_DEADZONE)
+              DriveState = negative;
+            else if (fabs(stickTurn) > STICK_DEADZONE)
+              DriveState = positive;
+            else
+              DriveState = idle;
+            
             requestedMotorPower[0] = speedScalar * stickForwardRev;
             requestedMotorPower[1] = speedScalar * stickForwardRev;
             // drivingStraight = true;
@@ -239,7 +252,9 @@ void Drive::generateMotionValues(float tankModePct) {
                 // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[0])) {
                 //     case true: calcTurning(stickTurn, abs(lastRampPower[0])); break;
                 //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
-                // }
+                // } 
+                DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+
                 calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
 
                 requestedMotorPower[0] = copysign(turnMotorValues[0], stickForwardRev);
