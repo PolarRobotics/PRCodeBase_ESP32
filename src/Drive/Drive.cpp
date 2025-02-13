@@ -229,12 +229,10 @@ void Drive::generateMotionValues(float tankModePct) {
         if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
             // just move forward directly
             // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
-            if (fabs(stickTurn) < STICK_DEADZONE)
+            if (fabs(stickForwardRev) < STICK_DEADZONE)
               DriveState = negative;
-            else if (fabs(stickTurn) > STICK_DEADZONE)
+            else if (fabs(stickForwardRev) > STICK_DEADZONE)
               DriveState = positive;
-            else
-              DriveState = idle;
             
             requestedMotorPower[0] = speedScalar * stickForwardRev;
             requestedMotorPower[1] = speedScalar * stickForwardRev;
@@ -253,7 +251,13 @@ void Drive::generateMotionValues(float tankModePct) {
                 //     case true: calcTurning(stickTurn, abs(lastRampPower[0])); break;
                 //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
                 // } 
-                DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+                // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+                if (fabs(stickForwardRev) < STICK_DEADZONE)
+                  DriveState = negative_right;
+                else if (fabs(stickForwardRev) > STICK_DEADZONE)
+                  DriveState = positive_right;
+                else
+                  DriveState = idle;
 
                 calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
 
@@ -264,6 +268,12 @@ void Drive::generateMotionValues(float tankModePct) {
                 //     case true: calcTurning(stickTurn, abs(lastRampPower[1])); break;
                 //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
                 // }
+                if (fabs(stickForwardRev) < STICK_DEADZONE)
+                  DriveState = negative_left;
+                else if (fabs(stickForwardRev) > STICK_DEADZONE)
+                  DriveState = positive_left;
+                else
+                  DriveState = idle;
 
                 calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
                 
@@ -402,6 +412,8 @@ void Drive::printDebugInfo() {
     // Serial.print(F("  requestedPower - currentRampPower "));
     // Serial.println(requestedPower - currentRampPower[mtr], 10);
 
+    Serial.print(F("  DriveState: "));
+    Serial.print(DriveState);
     Serial.print(F("  DriveStraight: "));
     Serial.print(drivingStraight ? F("true ") : F("false"));
     Serial.print(F("  currentAngleSpeed: "));
