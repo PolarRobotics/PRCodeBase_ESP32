@@ -211,77 +211,78 @@ float Drive::getSpeedScalar() {
  * Created: 9-12-2022
 */
 void Drive::generateMotionValues(float tankModePct) {
-    if (fabs(stickForwardRev) < STICK_DEADZONE) { // fwd stick is zero
-        if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
-            requestedMotorPower[0] = 0, requestedMotorPower[1] = 0; // not moving, set motors to zero
-        } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward so use tank mode
-            // drivingStraight = false;
-            DriveState = tank_right;
-            requestedMotorPower[0] = speedScalar * abs(stickTurn)  * tankModePct;
-            requestedMotorPower[1] = -speedScalar * abs(stickTurn) * tankModePct;
-        } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward so use tank mode
-            // drivingStraight = false;
-            DriveState = tank_left;
-            requestedMotorPower[0] = -speedScalar * abs(stickTurn) * tankModePct;
-            requestedMotorPower[1] = speedScalar * abs(stickTurn)  * tankModePct;
-        } // no general else since encountered infinite loop
-    } else { // fwd stick is not zero
-        if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
-            // just move forward directly
-            // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
-            if (fabs(stickForwardRev) < STICK_DEADZONE)
-              DriveState = negative;
-            else if (fabs(stickForwardRev) > STICK_DEADZONE)
-              DriveState = positive;
-            
-            requestedMotorPower[0] = speedScalar * stickForwardRev;
-            requestedMotorPower[1] = speedScalar * stickForwardRev;
-            // drivingStraight = true;
-        } else { // moving forward and turning
-            /*
-            if the sticks are not in any of the edge cases tested for above (when both sticks are not 0),
-            a value must be calculated to determine how to scale the motor that is doing the turning.
-            i.e.: if the user moves the left stick all the way forward (stickFwdRev = 1), and they are attempting
-            to turn right. The left motor should get set to 1 and the right motor should get set to
-            some value less than 1, this value is determined by the function calcTurningMotorValue
-            */
-            // drivingStraight = false;
-            if(stickTurn > STICK_DEADZONE) { // turn Right
-                // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[0])) {
-                //     case true: calcTurning(stickTurn, abs(lastRampPower[0])); break;
-                //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
-                // } 
-                // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
-                if (fabs(stickForwardRev) < STICK_DEADZONE)
-                  DriveState = negative_right;
-                else if (fabs(stickForwardRev) > STICK_DEADZONE)
-                  DriveState = positive_right;
-                else
-                  DriveState = idle;
+  if (fabs(stickForwardRev) < STICK_DEADZONE) { // fwd stick is zero
+    if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
+      DriveState = idle;
+      requestedMotorPower[0] = 0, requestedMotorPower[1] = 0; // not moving, set motors to zero
+    } else if (stickTurn > STICK_DEADZONE) { // turning right, but not moving forward so use tank mode
+      // drivingStraight = false;
+      DriveState = tank_right;
+      requestedMotorPower[0] = speedScalar * abs(stickTurn)  * tankModePct;
+      requestedMotorPower[1] = -speedScalar * abs(stickTurn) * tankModePct;
+    } else if (stickTurn < -STICK_DEADZONE) { // turning left, but not moving forward so use tank mode
+      // drivingStraight = false;
+      DriveState = tank_left;
+      requestedMotorPower[0] = -speedScalar * abs(stickTurn) * tankModePct;
+      requestedMotorPower[1] = speedScalar * abs(stickTurn)  * tankModePct;
+    } // no general else since encountered infinite loop
+  } else { // fwd stick is not zero
+    if (fabs(stickTurn) < STICK_DEADZONE) { // turn stick is zero
+      // just move forward directly
+      // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+      if (stickForwardRev < -STICK_DEADZONE)
+        DriveState = negative;
+      else if (stickForwardRev > STICK_DEADZONE)
+        DriveState = positive;
+      
+      requestedMotorPower[0] = speedScalar * stickForwardRev;
+      requestedMotorPower[1] = speedScalar * stickForwardRev;
+      // drivingStraight = true;
+    } else { // moving forward and turning
+      /*
+      if the sticks are not in any of the edge cases tested for above (when both sticks are not 0),
+      a value must be calculated to determine how to scale the motor that is doing the turning.
+      i.e.: if the user moves the left stick all the way forward (stickFwdRev = 1), and they are attempting
+      to turn right. The left motor should get set to 1 and the right motor should get set to
+      some value less than 1, this value is determined by the function calcTurningMotorValue
+      */
+      // drivingStraight = false;
+      if(stickTurn > STICK_DEADZONE) { // turn Right
+        // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[0])) {
+        //     case true: calcTurning(stickTurn, abs(lastRampPower[0])); break;
+        //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
+        // } 
+        // DriveState = stickForwardRev < STICK_DEADZONE ? negative : positive;
+        if (stickForwardRev < -STICK_DEADZONE)
+          DriveState = negative_right;
+        else if (stickForwardRev > STICK_DEADZONE)
+          DriveState = positive_right;
+        else
+          DriveState = idle;
 
-                calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
+        calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
 
-                requestedMotorPower[0] = copysign(turnMotorValues[0], stickForwardRev);
-                requestedMotorPower[1] = copysign(turnMotorValues[1], stickForwardRev);
-            } else if(stickTurn < -STICK_DEADZONE) { // turn Left
-                // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[1])) {
-                //     case true: calcTurning(stickTurn, abs(lastRampPower[1])); break;
-                //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
-                // }
-                if (fabs(stickForwardRev) < STICK_DEADZONE)
-                  DriveState = negative_left;
-                else if (fabs(stickForwardRev) > STICK_DEADZONE)
-                  DriveState = positive_left;
-                else
-                  DriveState = idle;
+        requestedMotorPower[0] = copysign(turnMotorValues[0], stickForwardRev);
+        requestedMotorPower[1] = copysign(turnMotorValues[1], stickForwardRev);
+      } else if(stickTurn < -STICK_DEADZONE) { // turn Left
+        // switch(abs((speedScalar * stickForwardRev)) > abs(lastRampPower[1])) {
+        //     case true: calcTurning(stickTurn, abs(lastRampPower[1])); break;
+        //     case false: calcTurning(stickTurn, abs(speedScalar * stickForwardRev)); break;
+        // }
+        if (stickForwardRev < -STICK_DEADZONE)
+          DriveState = negative_left;
+        else if (stickForwardRev > STICK_DEADZONE)
+          DriveState = positive_left;
+        else
+          DriveState = idle;
 
-                calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
-                
-                requestedMotorPower[0] = copysign(turnMotorValues[1], stickForwardRev);
-                requestedMotorPower[1] = copysign(turnMotorValues[0], stickForwardRev);
-            }
-        }
+        calcTurning(abs(stickTurn), abs(speedScalar * stickForwardRev));
+        
+        requestedMotorPower[0] = copysign(turnMotorValues[1], stickForwardRev);
+        requestedMotorPower[1] = copysign(turnMotorValues[0], stickForwardRev);
+      }
     }
+  }
 }
 
 
