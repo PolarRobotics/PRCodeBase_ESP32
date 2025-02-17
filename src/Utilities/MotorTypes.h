@@ -34,7 +34,7 @@ const char* getMotorTypeString(MotorType type);
  * @brief coeffs deffins the two constants needed for a power curve fit
  * 
  * f(x)=ax^b
- * where, a and b are constonts
+ * where, a and b are constants
  * 
  */
 typedef struct Coeffs{

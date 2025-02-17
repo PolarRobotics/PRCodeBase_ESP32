@@ -42,18 +42,13 @@
 // the minimum power that can be written to the motor, prevents stalling
 #define MOTOR_ZERO_OFFST 0.05f
 
-// BSN defines for the small 12v motors
-#define SMALL_12V_BOOST_PCT          0.15f
-#define SMALL_12V_NORMAL_PCT         0.1f // 0.5
-#define SMALL_12V_SLOW_PCT           0.05f
-
 #define BRAKE_BUTTON_PCT 0
 
 // Error threshold for DriveStraight controller
 #define ERROR_THRESHOLD 0.02f
 
 // !TODO: not sure if this is the correct location for this array
-// This array must follow the same order as MotorType to be used effectively
+// This array must follow the same order as MotorType (defined in MotorTypes.h) to be used effectively
 constexpr float MOTORTYPE_BNS_ARRAY[NUM_MOTOR_TYPES][3] = {
 // Boost   Normal  Slow
   {0.70f,  0.60f,  0.30f}, // index 0: Big Ampflow Motor
